@@ -8,7 +8,7 @@ let ws={active:"merchant",states:{},names:{},studies:[]},scene=null,configuring=
 const UI_STORE="yance-interface-v1",motionQuery=matchMedia("(prefers-reduced-motion: reduce)");
 const preferenceDefaults={textScale:100,density:"comfortable",sceneSize:"balanced",motion:"system",autoplay:true,speed:1,hints:true};
 let prefs={...preferenceDefaults},moduleUI={},saveTimer,uiSaveTimer,renderFrame=0,transitionAnimations=[],switchVersion=0,scrubbing=false,scrubWasPlaying=false,changingModule=false;
-let resultKey="",resultMemo=null;const dialogFocus=new WeakMap();
+let resultKey="",resultMemo=null,feedbackKey="";const dialogFocus=new WeakMap();
 try{const stored=JSON.parse(localStorage.getItem(UI_STORE)||"null");if(stored&&typeof stored==="object"){const p=stored.preferences||{};for(const [key,allowed] of Object.entries({textScale:[100,112,125],density:["comfortable","compact"],sceneSize:["compact","balanced","large"],motion:["system","reduce"],speed:[1,2,4]})){if(allowed.includes(p[key]))prefs[key]=p[key]}for(const key of ["autoplay","hints"])if(typeof p[key]==="boolean")prefs[key]=p[key];if(stored.modules&&typeof stored.modules==="object")moduleUI=stored.modules}}catch{}
 const validatedUI=new Set();
 const reduceMotion=()=>prefs.motion==="reduce"||motionQuery.matches;
@@ -32,33 +32,42 @@ function flushRender(){if(renderFrame){cancelAnimationFrame(renderFrame);renderF
 function notify(t){clearTimeout(toastId);$("#toast").textContent=t;$("#toast").classList.add("show");toastId=setTimeout(()=>$("#toast").classList.remove("show"),2300)}
 function openDialog(id){flushRender();const d=$("#"+id);if(!d.open){dialogFocus.set(d,document.activeElement);d.showModal()}icons();syncScenePlayback()}
 function closeDialogs(){$$("dialog[open]").forEach(d=>d.close())}
-function moduleMenu(){$("#module-tabs").innerHTML=S.modules.map(m=>'<button role="tab" aria-selected="'+(m.id===ws.active)+'" tabindex="'+(m.id===ws.active?0:-1)+'" data-module="'+m.id+'"><span class="module-symbol"><i data-lucide="'+m.icon+'"></i></span><span><b>'+m.title+'</b><small>'+m.english+'</small></span></button>').join("");icons()}
+function moduleMenu(){$("#module-tabs").innerHTML=["public","growth","merchant"].map(id=>S.getModule(id)).map(m=>'<button role="tab" aria-selected="'+(m.id===ws.active)+'" tabindex="'+(m.id===ws.active?0:-1)+'" data-module="'+m.id+'"><span class="module-symbol"><i data-lucide="'+m.icon+'"></i></span><span><b>'+safeText(m.title)+' <em>'+safeText(m.productLabel)+'</em></b><small>'+safeText(m.audience||m.english)+'</small></span></button>').join("");icons()}
 function controlMarkup(c){
- const value=state().params[c.key],id="param-"+c.key;
+ const custom=state().scheme==="custom"&&!!c.scheme,value=(custom?state().custom.params:state().params)[c.key],id="param-"+c.key;
  const label='<span>'+safeText(c.label)+(c.type==="range"?'<output for="'+id+'">'+safeText(value)+' <small>'+safeText(c.unit)+'</small></output>':c.unit?'<small class="control-unit">'+safeText(c.unit)+'</small>':"")+'</span>';
  let field="";
  if(c.type==="select")field='<select id="'+id+'" data-param="'+c.key+'" aria-describedby="'+id+'-hint">'+c.options.map(o=>'<option value="'+safeText(o.value)+'"'+(String(o.value)===String(value)?" selected":"")+'>'+safeText(o.label)+'</option>').join("")+'</select>';
  else field='<input id="'+id+'" data-param="'+c.key+'" type="'+(c.type==="range"?"range":"number")+'" min="'+c.min+'" max="'+c.max+'" step="'+c.step+'" value="'+value+'" aria-describedby="'+id+'-hint">';
- return'<label class="field '+(['daily','demand'].includes(c.key)?'scale-field':'')+'">'+label+field+(c.type==="range"?'<div class="range-extents"><span>'+c.min+'</span><span>'+c.max+' '+safeText(c.unit)+'</span></div>':"")+'<p id="'+id+'-hint" class="'+(c.scheme?"control-hint":"sr-only")+'">'+safeText(c.hint)+'</p></label>';
+ return'<label class="field '+(['daily','demand'].includes(c.key)?'scale-field':'')+'">'+label+field+(c.type==="range"?'<div class="range-extents"><span>'+c.min+'</span><span>'+c.max+' '+safeText(c.unit)+'</span></div>':"")+'<p id="'+id+'-hint" class="'+"control-hint"+'">'+safeText(c.hint)+'</p></label>';
+}
+function renderStrategyChoices(){
+ const c=config(),s=state(),schemeIcons={growth:["route","list-filter","messages-square"],merchant:["tag","ticket","badge-check"],public:["building-2","clock-4","bus-front"]};
+ const choices=c.schemes.map((v,i)=>({...v,icon:schemeIcons[c.id][i]}));
+ choices.push({id:"custom",name:s.custom.enabled?s.custom.name:"创建我的策略",desc:s.custom.enabled?"独立调整参数，保留预设方案作对照。":"选一种行动方式，命名并设置自己的方案。",tag:"我的策略",icon:s.custom.enabled?"pencil-line":"plus"});
+ $("#scheme-options").innerHTML=choices.map(v=>'<button type="button" class="'+(v.id==="custom"?"custom-choice":"")+'" role="radio" aria-checked="'+(s.scheme===v.id)+'" tabindex="'+(s.scheme===v.id?0:-1)+'" data-scheme="'+v.id+'"><span class="scheme-symbol"><i data-lucide="'+v.icon+'"></i></span><span class="radio"></span><span class="scheme-copy"><b>'+safeText(v.name)+'</b><small>'+safeText(v.desc)+'</small></span><span class="scheme-tag">'+(s.scheme===v.id?"当前策略":safeText(v.tag))+'</span></button>').join("");icons();
 }
 function renderSettings(){
- const c=config(),s=state();
- const schemeIcons={growth:["route","list-filter","messages-square"],merchant:["tag","ticket","badge-check"],public:["building-2","clock-4","bus-front"]};
- $("#scheme-options").innerHTML=c.schemes.map((v,i)=>'<button type="button" role="radio" aria-checked="'+(s.scheme===v.id)+'" tabindex="'+(s.scheme===v.id?0:-1)+'" data-scheme="'+v.id+'"><span class="scheme-symbol"><i data-lucide="'+schemeIcons[c.id][i]+'"></i></span><span class="radio"></span><span class="scheme-copy"><b>'+v.name+'</b><small>'+v.desc+'</small></span><span class="scheme-tag">'+v.tag+'</span></button>').join("");
- const controls=c.controls.filter(x=>x.scheme===s.scheme);
- $("#variant-controls").innerHTML=controls.length?controls.map(controlMarkup).join(""):'<p class="baseline-note">不调整现有流程，作为两个候选方案的比较基线。</p>';
+ const c=config(),s=state(),custom=s.scheme==="custom",scheme=custom?s.custom.baseScheme:s.scheme;
+ renderStrategyChoices();
+ $("#custom-identity").hidden=!custom;$("#custom-name").value=s.custom.name;
+ $("#custom-template").innerHTML=c.schemes.filter(x=>x.id!=="baseline").map(v=>'<option value="'+v.id+'"'+(v.id===s.custom.baseScheme?' selected':'')+'>'+safeText(v.name)+'</option>').join("");
+ $("#copy-strategy").hidden=custom||scheme==="baseline";$("#copy-strategy").dataset.confirm="false";$("#copy-strategy").innerHTML='<i data-lucide="copy-plus"></i>复制为我的策略';
+ const controls=c.controls.filter(x=>x.scheme===scheme);
+ $("#variant-controls").innerHTML=controls.length?controls.map(controlMarkup).join(""):'<p class="baseline-note">这是现状参照。选择另一种做法，查看改变行动后可能带来的差异。</p>';
  $("#main-controls").innerHTML=c.controls.filter(x=>x.section==="shared"&&["days","budget","daily","demand"].includes(x.key)).map(controlMarkup).join("");
- $("#advanced-controls").innerHTML=c.controls.filter(x=>x.section==="shared"&&!["days","budget","daily","demand"].includes(x.key)).map(controlMarkup).join("");
- $("#objective").innerHTML=c.objectives.map(o=>'<option value="'+o.value+'"'+(o.value===s.objective?" selected":"")+'>'+o.label+'</option>').join("");
+ const advanced=c.controls.filter(x=>x.section==="shared"&&!["days","budget","daily","demand"].includes(x.key));$("#advanced-controls").innerHTML=advanced.map(controlMarkup).join("");$(".advanced").hidden=!advanced.length;
+ $("#objective").innerHTML=c.objectives.map(o=>'<option value="'+o.value+'"'+(o.value===s.objective?" selected":"")+'>'+safeText(o.label)+'</option>').join("");
+ $(".advanced summary").innerHTML=(c.id==="merchant"?"售价与成本":c.id==="growth"?"服务能力":"现有窗口能力")+'<i data-lucide="chevron-down"></i>';
  $(".advanced").open=ui().advanced;icons();syncControls();
 }
 function syncControls(){
- $$("[data-param]").forEach(el=>{const c=config().controls.find(c=>c.key===el.dataset.param);el.value=state().params[c.key];const out=el.closest("label").querySelector("output");if(out)out.innerHTML=safeText(el.value)+' <small>'+safeText(c.unit)+'</small>'});
+ $$("[data-param]").forEach(el=>{const c=config().controls.find(c=>c.key===el.dataset.param);el.value=(state().scheme==="custom"&&c.scheme?state().custom.params:state().params)[c.key];const out=el.closest("label").querySelector("output");if(out)out.innerHTML=safeText(el.value)+' <small>'+safeText(c.unit)+'</small>'});
  $("#objective").value=state().objective;$("#period-label").textContent=state().params.days+" 天观察窗口";$("#day-total").textContent=state().params.days+" 天";
- $("#world-location").textContent=config().schemes.find(x=>x.id===state().scheme).short;
+ $("#world-location").textContent=result().selected.name;$("#active-strategy-name").textContent="正在调整 · "+result().selected.name;
 }
 function renderModule(){
- const c=config();moduleMenu();$("#module-caption").textContent=c.title+" / "+c.english;$("#study-title").textContent=c.strategyTitle;$("#study-decision").textContent=c.decision;$("#world-title").textContent=c.worldTitle;
+ const c=config();moduleMenu();$("#module-caption").textContent=(c.audience||c.title)+" · "+c.title;$("#study-title").textContent=c.strategyTitle;$("#study-decision").textContent=c.decision;$("#world-title").textContent=c.worldTitle;
  $("#audience-title").textContent=c.audienceTitle;$("#audience-definition").textContent=c.audienceNote;$("#visitor-select").dataset.signature="";
  $("#world-legend").innerHTML=c.segments4.map(s=>'<span style="--seg:'+s.color+'"><i></i>'+s.name+'</span>').join("");
  $("#audience-cards").innerHTML=c.segments4.map((s,i)=>'<article class="audience-card" style="--seg:'+s.color+';--seg-soft:'+s.color+'20"><div class="audience-head"><div class="audience-avatar"></div><div><h4>'+s.name+'</h4><small>'+s.short+'</small></div></div><strong data-weight-label="'+i+'"></strong><p>'+s.desc+'</p><input data-weight="'+i+'" type="range" min="2" max="94" step="1" aria-label="'+s.name+'占比"></article>').join("");
@@ -114,10 +123,10 @@ function updateVisitorMenu(){
 }
 function updateScene(){
  if(!window.TownScene){$("#play-state").textContent="场景加载失败，请刷新重试";return}
- const r=result(),c=config(),s=state(),p=s.params,u=ui();configuring=true;
+ const r=result(),c=config(),s=state(),p=r.selectedParams||s.params,u=ui();configuring=true;
  if(!scene){scene=new TownScene({canvas:$("#town"),onSelect:selectPerson,onTick:sceneTick,onCamera:cameraChanged});window.yanceTown=scene}
  scene.setVisible(canShowScene());
- const count=sceneCount();if(u.selected>count){u.selected=null;resetObserver()}scene.selected=u.selected;scene.setOptions({count,groupRates:r.selected.groups.map(g=>(g.rate||g.completion||0)/100),lighting:u.lighting,module:ws.active,segments:c.segments4.map(g=>({id:g.id,name:g.name,color:g.color,quote:g.quote})),scheme:s.scheme,coupon:ws.active==="merchant"?r.selected.d:0,memberTarget:p.memberTarget||"all",coverage:r.selected.coverage,weights:s.weights.slice(),duration:p.days,conversion:(r.selected.rate||r.selected.completion||0)/100,progress:u.progress});
+ const count=sceneCount();if(u.selected>count){u.selected=null;resetObserver()}scene.selected=u.selected;scene.setOptions({count,groupRates:r.selected.groups.map(g=>(g.rate||g.completion||0)/100),lighting:u.lighting,module:ws.active,segments:c.segments4.map(g=>({id:g.id,name:g.name,color:g.color,quote:g.quote})),scheme:r.selectedScheme||s.scheme,coupon:ws.active==="merchant"?r.selected.d:0,memberTarget:p.memberTarget||"all",coverage:r.selected.coverage,weights:s.weights.slice(),duration:p.days,conversion:(r.selected.rate||r.selected.completion||0)/100,progress:u.progress});
  scene.setCamera(u.camera);scene.setSpeed(prefs.speed);scene.setPlaying(canShowScene()&&!scrubbing&&u.playing);configuring=false;
  syncSceneControls();updateVisitorMenu();updateCameraControls();if(u.selected&&scene.visible)scene.selectAgent(u.selected);sceneTick(scene.getSnapshot?scene.getSnapshot():{progress:scene.progress});
 }
@@ -130,24 +139,47 @@ function selectPerson(profile){
  $("#expanded-observer-name").textContent=profile.name+" / "+seg.name+" · "+profile.status;$("#expanded-observer-quote").textContent=profile.quote||seg.quote;
  $("#expanded-observer").hidden=!isExpanded();persistUI();
 }
+function deltaText(row,base,meta){
+ const delta=row[meta.key]-base[meta.key];if(Math.abs(delta)<.00001)return "与现状相同";
+ const sign=delta>0?"+":"−",value=Math.abs(delta);
+ return sign+(meta.format==="percent"?nr(value,1)+" 个百分点":fmt(value,meta)+(meta.format==="integer"?(meta.unit||""):""))+" / 较现状";
+}
+function strategyFeedback(){
+ const r=result(),c=config(),s=state(),p=r.selectedParams||s.params,base=r.rows[0],scheme=r.selectedScheme||s.scheme;
+ const guidance={growth:{baseline:["先看现有流程的流失","用现状作为起点，再比较精简步骤或人工帮助是否值得投入。"],open:["重点看：步骤少了，留存是否增加","减少首次操作步骤会影响激活与后续留存；同时留意服务投入。"],member:["重点看：人工帮助覆盖了多少人","比较被帮助的新用户、7 日留存与服务成本，判断人手是否足够。"]},merchant:{baseline:["先看不优惠时的成交与毛利","保留原价作为参照，避免只看到订单增加，却忽略优惠成本。"],open:["重点看：多卖出的商品，能否覆盖优惠","同时看成交和贡献毛利。提高优惠力度不一定让利润更高。"],member:["重点看：把优惠给谁，更值得","调整会员范围与金额，比较定向成交、优惠投入和贡献毛利。"]},public:{baseline:["先看现有窗口能完成多少需求","以现有服务能力为参照，观察还剩多少办事需求未被满足。"],open:["重点看：延长时段，能多办成多少事","比较新增办理量、重点居民覆盖与运营支出，检查名额是否用得上。"],member:["重点看：服务走近居民后，谁更方便","比较流动点的完成办理量和重点居民覆盖，留意可用预算。"]}};
+ const [title,desc]=guidance[c.id][scheme]||guidance[c.id].baseline;$("#focus-title").textContent=title;$("#focus-copy").textContent=desc;
+ const keys=c.id==="merchant"?[r.chartKey,r.chartKey==="margin"?"orders":"margin","subsidy"]:c.id==="growth"?[r.chartKey,r.chartKey==="retained"?"activated":"retained","cost"]:[r.chartKey,r.chartKey==="served"?"access":"served","cost"];
+ const all=c.metrics.concat(c.tableMetrics),metrics=keys.map(key=>all.find(m=>m.key===key)).filter(Boolean);
+ $("#effect-metrics").innerHTML=metrics.map(m=>'<div class="effect-metric"><small>'+safeText(m.label)+'</small><strong>'+fmt(r.selected[m.key],m)+'</strong><em>'+safeText(deltaText(r.selected,base,m))+'</em></div>').join("");
+ const nextFeedback=JSON.stringify([c.id,s.scheme,metrics.map(m=>r.selected[m.key])]);if(feedbackKey&&feedbackKey!==nextFeedback&&!reduceMotion())$("#effect-metrics").animate([{opacity:.5},{opacity:1}],{duration:240,easing:"ease-out"});feedbackKey=nextFeedback;
+ const coverage=scheme==="baseline"?"现状参照 · 未增加策略投入":r.selected.coverage<.999?"资源提醒：预算或服务能力可支持计划的 "+nr(r.selected.coverage*100,1)+"%，已按可承担范围测算。":"当前预算与能力可覆盖本方案计划。";
+ $("#resource-feedback").textContent=coverage;$("#resource-feedback").classList.toggle("limited",scheme!=="baseline"&&r.selected.coverage<.999);
+ $("#change-status").textContent="已应用「"+r.selected.name+"」 · "+p.days+" 天测算，指标随设置更新";
+ $("#settings-status").textContent=r.selected.name+" · "+r.chartLabel+" "+fmt(r.selected[r.chartKey],currentMeta());
+ $("#comparison-selected").textContent="当前选择 · "+r.selected.name;
+}
 function cards(){
- const r=result(),c=config(),primary=currentMeta();
- const secondary=c.metrics.filter(m=>m.key!==r.chartKey).slice(0,2);
- $("#scenario-cards").innerHTML=r.rows.map(row=>'<button class="scenario-card '+(row.id===r.best.id?"best":"")+'" data-select-scenario="'+row.id+'"><div class="scenario-tag">'+row.tag+'</div><div class="scenario-top"><h4>'+row.name+'</h4>'+(row.id===r.best.id?'<span class="recommend-label">建议验证</span>':"")+'</div><div class="scenario-number">'+fmt(row[r.chartKey],primary)+(primary.format==="integer"?'<small>'+safeText(primary.unit)+'</small>':"")+'</div><div class="scenario-label">'+r.chartLabel+'</div><div class="scenario-bottom">'+secondary.map(m=>'<div><span>'+m.label+'</span><b>'+fmt(row[m.key],m)+'</b></div>').join("")+'</div></button>').join("");
+ const r=result(),c=config(),primary=currentMeta(),secondary=c.metrics.filter(m=>m.key!==r.chartKey).slice(0,2);
+ $("#scenario-cards").innerHTML=r.rows.map(row=>'<button class="scenario-card '+(row.id===r.best.id?"best ":"")+(row.id===r.selected.id?"selected":"")+'" aria-pressed="'+(row.id===r.selected.id)+'" data-select-scenario="'+row.id+'"><div class="scenario-tag">'+safeText(row.tag)+(row.id===r.selected.id?'<span class="selection-label">当前选择</span>':"")+'</div><div class="scenario-top"><h4>'+safeText(row.name)+'</h4>'+(row.id===r.best.id?'<span class="recommend-label">按目标领先</span>':"")+'</div><div class="scenario-number">'+fmt(row[r.chartKey],primary)+(primary.format==="integer"?'<small>'+safeText(primary.unit)+'</small>':"")+'</div><div class="scenario-label">'+safeText(r.chartLabel)+'</div><div class="scenario-delta">'+safeText(deltaText(row,r.rows[0],primary))+'</div><div class="scenario-bottom">'+secondary.map(m=>'<div><span>'+safeText(m.label)+'</span><b>'+fmt(row[m.key],m)+'</b></div>').join("")+'</div></button>').join("");
+ strategyFeedback();
 }
 function tableMarkup(r){
  const ms=r.tableMetrics;
- return'<thead><tr><th scope="col">策略</th>'+ms.map(m=>'<th scope="col">'+m.label+(m.format==="integer"?" / "+m.unit:"")+'</th>').join("")+'</tr></thead><tbody>'+r.rows.map(row=>'<tr class="'+(row.id===r.best.id?"best":"")+'"><td>'+row.name+(row.id===r.best.id?" · 建议验证":"")+'</td>'+ms.map(m=>'<td>'+fmt(row[m.key],m)+'</td>').join("")+'</tr>').join("")+'</tbody>';
+ return'<thead><tr><th scope="col">策略</th>'+ms.map(m=>'<th scope="col">'+m.label+(m.format==="integer"?" / "+m.unit:"")+'</th>').join("")+'</tr></thead><tbody>'+r.rows.map(row=>'<tr class="'+(row.id===r.selected.id?"selected":"")+'"><td>'+safeText(row.name)+(row.id===r.selected.id?" · 当前选择":"")+(row.id===r.best.id?" · 按目标领先":"")+'</td>'+ms.map(m=>'<td>'+fmt(row[m.key],m)+'</td>').join("")+'</tr>').join("")+'</tbody>';
 }
 function comparison(){
  const r=result(),c=config(),m=currentMeta(),best=r.best;
- $("#recommendation").textContent=r.recommendation.split("。")[0]+"。";$("#recommendation-detail").textContent="基于 "+nr(r.reach)+" "+(ws.active==="public"?"人次服务需求":"位触达用户")+"、"+state().params.days+" 天窗口与当前人群结构。"+r.recommendation.split("。").slice(1).join("。");$("#recommendation-tag").textContent=best.tag+" / "+r.chartLabel+" "+fmt(best[r.chartKey],m);
- $("#stats").innerHTML=r.metrics.map(meta=>'<article class="stat"><small>'+meta.label+'</small><strong>'+fmt(best[meta.key],meta)+'</strong><em>'+((meta.unit&&!["%","元"].includes(meta.unit))?meta.unit:"完整活动窗口")+'</em></article>').join("");
+ $("#comparison-selected").textContent="当前选择 · "+r.selected.name;
+ $("#recommendation").textContent=r.selected.name+"："+r.chartLabel+" "+fmt(r.selected[r.chartKey],m);
+ $("#recommendation-detail").textContent="较现状"+(Math.abs(r.selected[r.chartKey]-r.rows[0][r.chartKey])<.00001?"无变化。":deltaText(r.selected,r.rows[0],m).replace(" / 较现状","")+"。")+"下方指标与资源说明均属于当前选择。";
+ $("#recommendation-tag").textContent=state().params.days+" 天 · "+nr(r.reach)+(ws.active==="public"?" 人次需求":" 人触达");
+ $("#ranking-note").textContent="按「"+c.objectives.find(o=>o.value===state().objective).label+"」比较，当前领先的是「"+r.best.name+"」。"+(r.best.id===r.selected.id?"它也是你当前选择的策略。":"你可以在上方策略区选择它，或保留自己的方案继续调整。")+"排序基于当前假设，实际效果需验证。";
+ $("#stats").innerHTML=r.metrics.map(meta=>'<article class="stat"><small>'+safeText(meta.label)+'</small><strong>'+fmt(r.selected[meta.key],meta)+'</strong><em>'+safeText(deltaText(r.selected,r.rows[0],meta))+'</em></article>').join("");
  $("#chart-title").textContent=r.chartLabel+"对照";$("#chart-unit").textContent="单位 / "+r.chartUnit;
  const low=Math.min(0,...r.rows.map(row=>row[r.chartKey])),high=Math.max(1,...r.rows.map(row=>row[r.chartKey])),range=high-low,zero=-low/range*100;
- $("#result-chart").innerHTML=r.rows.map(row=>{const value=row[r.chartKey],left=value<0?(value-low)/range*100:zero;return'<div class="chart-row '+(row.id===best.id?"best":"")+'"><span>'+row.short+'</span><div class="chart-track" role="img" aria-label="'+row.name+' '+fmt(value,m)+'"><div class="zero-line" style="left:'+zero+'%"></div><div class="chart-bar '+(value<0?"loss":"")+'" style="left:'+left+'%;width:'+Math.abs(value)/range*100+'%"></div></div><b>'+fmt(value,m)+'</b></div>'}).join("");
- const top=state().weights.indexOf(Math.max(...state().weights)),difference=best[r.chartKey]-r.rows[0][r.chartKey];
- const n=[{title:"评价目标决定优先级",text:c.objectives.find(o=>o.value===state().objective).label+"是当前评价目标。"+(difference>1e-8?"优先方案较对照增加 "+(m.format==="percent"?nr(difference,1)+" 个百分点":fmt(difference,m))+"。":"当前方案与对照在该指标上持平或优先保留现状。")},{title:"人群结构是一项关键假设",text:c.segments4[top].name+"占比 "+nr(state().weights[top],1)+"%。建议重点验证这一人群的行为基线与响应。"}].concat(r.notes.map((note,i)=>({title:i===r.notes.length-1?"落地前需要验证":r.selected.short+" · 资源边界",text:note})));
+ $("#result-chart").innerHTML=r.rows.map(row=>{const value=row[r.chartKey],left=value<0?(value-low)/range*100:zero;return'<div class="chart-row '+(row.id===r.selected.id?"selected":"")+'"><span>'+safeText(row.short)+'</span><div class="chart-track" role="img" aria-label="'+safeText(row.name)+' '+fmt(value,m)+'"><div class="zero-line" style="left:'+zero+'%"></div><div class="chart-bar '+(value<0?"loss":"")+'" style="left:'+left+'%;width:'+Math.abs(value)/range*100+'%"></div></div><b>'+fmt(value,m)+'</b></div>'}).join("");
+ const top=state().weights.indexOf(Math.max(...state().weights)),difference=r.selected[r.chartKey]-r.rows[0][r.chartKey];
+ const n=[{title:"评价目标决定优先级",text:c.objectives.find(o=>o.value===state().objective).label+"是当前评价目标。"+(difference>1e-8?"当前选择较现状增加 "+(m.format==="percent"?nr(difference,1)+" 个百分点":fmt(difference,m))+"。":"当前选择未高于现状，可结合资源投入继续比较。")},{title:"人群结构是一项关键假设",text:c.segments4[top].name+"占比 "+nr(state().weights[top],1)+"%。建议重点验证这一人群的行为基线与响应。"}].concat(r.notes.map((note,i)=>({title:i===r.notes.length-1?"落地前需要验证":r.selected.short+" · 资源边界",text:note})));
  $("#insights").innerHTML=n.map(x=>'<div class="insight"><h4>'+safeText(x.title)+'</h4><p>'+safeText(x.text)+'</p></div>').join("");
  $("#comparison-population").textContent=nr(r.reach)+" "+(ws.active==="public"?"人次需求":"人触达")+" / "+state().params.days+" 天";
  const temp=document.createElement("table");temp.innerHTML=tableMarkup(r);$("#table-head").innerHTML=temp.tHead.innerHTML;$("#table-body").innerHTML=temp.tBodies[0].innerHTML;
@@ -194,21 +226,22 @@ function methodContent(){
  return'<div class="method-source"><b>当前来源：'+c.title+'行业情景样例</b><br>人群基线与策略响应采用预设假设，适合方案比较与研究讨论。真实业务结论需要使用获授权的数据进行校准与验证。</div><h3>'+c.title+'的测算口径</h3><ul>'+c.assumptions.map(a=>'<li>'+safeText(a)+'</li>').join("")+'</ul><h3>动态场景与总体指标</h3><p>小镇中的人物是可调数量的行为可视化样本，不与全部触达用户逐一对应。总体指标按完整周期与人群结构计算；场景人数可随每日规模调整，也可手动设置为 8–128 人。人群分布与完成概率遵循当前模型的分群结果，动画样本不等同于实际业务总人数。当前版本未连接后台推理或真实业务数据。</p><h3>保存与隐私</h3><p>设置与研究记录仅保存在当前浏览器，不上传服务器。下载的报告可独立保留；清除浏览器数据会移除本地研究记录。</p><h3>素材与字体</h3><p>像素地形采用 Kenney Tiny Town（CC0），人物与场景交互为原创绘制。中文标题使用 Noto Serif SC，正文使用 Noto Sans SC；英文字体以 Georgia 与系统衬线字体配合。字体与图标许可随网站代码保留。</p>';
 }
 function reportContent(){
- const r=result(),c=config(),bestContext=S.compute(ws.active,{...state(),scheme:r.best.id});
- return'<div class="report-summary">'+safeText(r.recommendation)+'</div><div class="report-condition"><span>'+c.title+'</span><span>'+state().params.days+' 天</span><span>'+nr(r.reach)+' '+(ws.active==="public"?"人次需求":"人触达")+'</span><span>'+safeText(c.objectives.find(o=>o.value===state().objective).label)+'</span></div><div class="stat-grid">'+r.metrics.map(m=>'<article class="stat"><small>'+m.label+'</small><strong>'+fmt(r.best[m.key],m)+'</strong><em>'+m.unit+'</em></article>').join("")+'</div><h3>三方案完整对照</h3><div class="table-wrap"><table>'+tableMarkup(r)+'</table></div><h3>研究条件</h3><div class="report-condition">'+c.controls.map(ctrl=>{const v=state().params[ctrl.key],label=ctrl.type==="select"?ctrl.options.find(x=>String(x.value)===String(v))?.label:v;return'<span>'+ctrl.label+'：'+safeText(label)+' '+(ctrl.type==="select"?"":safeText(ctrl.unit))+'</span>'}).join("")+'</div><p>'+c.segments4.map((g,i)=>g.name+" "+nr(state().weights[i],1)+"%").join(" / ")+'</p><h3>实际验证计划</h3><ol>'+c.validation.map(x=>'<li>'+safeText(x)+'</li>').join("")+'</ol><p class="report-method">数据来源：'+c.title+'行业情景样例。'+safeText(bestContext.notes.join(" "))+' 本报告不构成对真实业务结果的保证。生成时间：'+new Date().toLocaleString("zh-CN")+'</p>';
+ const r=result(),c=config(),p=r.selectedParams||state().params,scheme=r.selectedScheme||state().scheme;
+ const conditions=c.controls.filter(ctrl=>!ctrl.scheme||ctrl.scheme===scheme);
+ return'<div class="report-summary">当前选择：'+safeText(r.selected.name)+'</div><p>'+safeText(r.recommendation)+'</p><div class="report-condition"><span>'+safeText(c.title)+'</span><span>'+p.days+' 天</span><span>'+nr(r.reach)+' '+(ws.active==="public"?"人次需求":"人触达")+'</span><span>'+safeText(c.objectives.find(o=>o.value===state().objective).label)+'</span></div><h3>当前策略的结果</h3><div class="stat-grid">'+r.metrics.map(m=>'<article class="stat"><small>'+safeText(m.label)+'</small><strong>'+fmt(r.selected[m.key],m)+'</strong><em>'+safeText(deltaText(r.selected,r.rows[0],m))+'</em></article>').join("")+'</div><h3>全部方案对照</h3><div class="table-wrap"><table>'+tableMarkup(r)+'</table></div><h3>当前策略的设置</h3><div class="report-condition">'+(state().scheme==="custom"?'<span>行动方式：'+safeText(c.schemes.find(x=>x.id===scheme).name)+'</span>':"")+conditions.map(ctrl=>{const v=p[ctrl.key],label=ctrl.type==="select"?ctrl.options.find(x=>String(x.value)===String(v))?.label:v;return'<span>'+safeText(ctrl.label)+'：'+safeText(label)+' '+(ctrl.type==="select"?"":safeText(ctrl.unit))+'</span>'}).join("")+'</div><p>'+c.segments4.map((g,i)=>safeText(g.name)+" "+nr(state().weights[i],1)+"%").join(" / ")+'</p><h3>需要留意的资源与假设</h3><ul>'+r.notes.map(note=>'<li>'+safeText(note)+'</li>').join("")+'</ul><h3>实际验证计划</h3><ol>'+c.validation.map(x=>'<li>'+safeText(x)+'</li>').join("")+'</ol><p class="report-method">数据来源：'+safeText(c.title)+'行业情景样例。人群响应为预设假设，当前未接入真实业务数据或后台推理。生成时间：'+new Date().toLocaleString("zh-CN")+'</p>';
 }
 function openReport(){$("#report-name").value=ws.names[ws.active];$("#report-body").innerHTML=reportContent();openDialog("report-dialog")}
 function download(content,name,type){
  const href=URL.createObjectURL(new Blob([content],{type})),a=document.createElement("a");a.href=href;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(href),2000)
 }
 function exportHTML(){
- const title=ws.names[ws.active],css='body{font:14px/1.85 Georgia,"Microsoft YaHei",serif;color:#294f5c;max-width:1000px;padding:40px;margin:auto;background:#fff}h1{font-size:30px;font-weight:500;margin:12px 0 28px}h2,h3{font-size:19px;margin-top:30px}header{border-bottom:1px solid #ccdce1;padding-bottom:20px}small{color:#829aa4}.report-summary{font-size:21px;margin:25px 0}.report-condition{display:flex;gap:10px 22px;flex-wrap:wrap;color:#8199a3;font:12px/1.8 "Microsoft YaHei",sans-serif}.stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:25px 0}.stat{background:#f2f7f8;padding:15px;border-radius:6px}.stat small,.stat strong,.stat em{display:block}.stat strong{font-size:25px;font-weight:400}.stat em{font-size:11px;color:#859da6;font-style:normal}table{border-collapse:collapse;width:100%;font:12px/1.8 "Microsoft YaHei",sans-serif}th,td{padding:12px 8px;border-bottom:1px solid #deeaed;text-align:right}th:first-child,td:first-child{text-align:left}th{font-weight:400;color:#8aa2ab}.best{background:#f1f6f7}p,li{color:#6d8995;font-size:13px}.report-method{border-top:1px solid #d6e3e7;margin-top:30px;padding-top:18px;font-size:11px}.table-wrap{overflow:auto}@media(max-width:640px){body{padding:20px}.stat-grid{grid-template-columns:1fr 1fr}h1{font-size:25px}}@media print{body{padding:0}.stat, tr{break-inside:avoid}}';
+ const title=ws.names[ws.active],css='body{font:14px/1.85 Georgia,"Microsoft YaHei",serif;color:#253b34;max-width:1000px;padding:40px;margin:auto;background:#fff}h1{font-size:30px;font-weight:500;margin:12px 0 28px}h2,h3{font-size:19px;margin-top:30px}header{border-bottom:1px solid #cbd3c1;padding-bottom:20px}small{color:#687663}.report-summary{font-size:21px;margin:25px 0}.report-condition{display:flex;gap:10px 22px;flex-wrap:wrap;color:#63725d;font:12px/1.8 "Microsoft YaHei",sans-serif}.stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:25px 0}.stat{background:#edf1e6;padding:15px;border-radius:6px}.stat small,.stat strong,.stat em{display:block}.stat strong{font-size:25px;font-weight:400}.stat em{font-size:11px;color:#6c7c61;font-style:normal}table{border-collapse:collapse;width:100%;font:12px/1.8 "Microsoft YaHei",sans-serif}th,td{padding:12px 8px;border-bottom:1px solid #d8dfcc;text-align:right}th:first-child,td:first-child{text-align:left}th{font-weight:400;color:#748267}.best{background:#edf2e4}p,li{color:#58694f;font-size:13px}.report-method{border-top:1px solid #d0d9c5;margin-top:30px;padding-top:18px;font-size:11px}.table-wrap{overflow:auto}@media(max-width:640px){body{padding:20px}.stat-grid{grid-template-columns:1fr 1fr}h1{font-size:25px}}@media print{body{padding:0}.stat, tr{break-inside:avoid}}';
  const page='<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+safeText(title)+' · 演策</title><style>'+css+'</style></head><body><header><small>演策 YANCE / 决策研究</small><h1>'+safeText(title)+'</h1></header>'+reportContent()+'</body></html>';
  download(page,"演策-"+title.replace(/[\\/:*?"<>|]/g,"-")+".html","text/html;charset=utf-8");notify("已下载 HTML 报告")
 }
 function exportCSV(){
- const r=result(),head=["策略",...r.tableMetrics.map(m=>m.label+" ("+m.unit+")")],csvCell=v=>'"'+String(v).replace(/"/g,'""')+'"',rows=[head,...r.rows.map(row=>[row.name,...r.tableMetrics.map(m=>Number.isFinite(row[m.key])?+row[m.key].toFixed(4):"")])];
- rows.push([],["数据来源","行业情景样例，非真实业务预测"]);download("\ufeff"+rows.map(row=>row.map(csvCell).join(",")).join("\r\n"),"演策-"+ws.active+"-方案比较.csv","text/csv;charset=utf-8");notify("已下载 CSV 指标表")
+ const r=result(),head=["策略",...r.tableMetrics.map(m=>m.label+" ("+m.unit+")")],csvCell=v=>'"'+(typeof v==="string"&&/^[\s]*[=+@\-\t\r]/.test(v)?"'"+v:String(v)).replace(/"/g,'""')+'"',rows=[head,...r.rows.map(row=>[row.name,...r.tableMetrics.map(m=>Number.isFinite(row[m.key])?+row[m.key].toFixed(4):"")])];
+ rows.push([],["当前选择",r.selected.name],["行动方式",config().schemes.find(x=>x.id===(r.selectedScheme||state().scheme)).name]);config().controls.filter(c=>!c.scheme||c.scheme===(r.selectedScheme||state().scheme)).forEach(c=>rows.push([c.label,(r.selectedParams||state().params)[c.key],c.unit]));rows.push([],["数据来源","行业情景样例，非真实业务预测"]);download("\ufeff"+rows.map(row=>row.map(csvCell).join(",")).join("\r\n"),"演策-"+ws.active+"-方案比较.csv","text/csv;charset=utf-8");notify("已下载 CSV 指标表")
 }
 function library(){
  $("#library-body").innerHTML=ws.studies.length?ws.studies.slice().reverse().map(item=>'<article class="library-item"><div><h3>'+safeText(item.name)+'</h3><p>'+S.getModule(item.module).title+" / "+safeText(new Date(item.date).toLocaleString("zh-CN"))+'</p></div><button class="button" data-load-study="'+safeText(item.id)+'">继续研究<i data-lucide="arrow-up-right"></i></button><button class="icon-button" data-delete-study="'+safeText(item.id)+'" aria-label="删除'+safeText(item.name)+'" title="删除研究" data-tooltip="删除研究"><i data-lucide="trash-2"></i></button></article>').join(""):'<div class="library-empty"><i data-lucide="bookmark"></i><h3>还没有保存的研究。</h3><p>选择场景并设置参数后，点击「保存研究」。之后可在这里打开，继续比较。</p></div>';
@@ -219,19 +252,45 @@ function applyWeight(i,value){const others=[0,1,2,3].filter(j=>j!==i),extras=all
 document.addEventListener("click",e=>{
  const module=e.target.closest("[data-module]");if(module){setModule(module.dataset.module);return}
  const v=e.target.closest("[data-view]");if(v){setView(v.dataset.view,{source:v});return}
- const scheme=e.target.closest("[data-scheme]");if(scheme){if(state().scheme===scheme.dataset.scheme)return;state().scheme=scheme.dataset.scheme;renderSettings();renderAll();return}
- const card=e.target.closest("[data-select-scenario]");if(card){state().scheme=card.dataset.selectScenario;renderSettings();renderAll();notify("已将「"+result().selected.name+"」应用到场景");return}
+ const scheme=e.target.closest("[data-scheme]");if(scheme){chooseStrategy(scheme.dataset.scheme);return}
+ const card=e.target.closest("[data-select-scenario]");if(card){chooseStrategy(card.dataset.selectScenario);$("#strategy-workspace").scrollIntoView({behavior:reduceMotion()?"auto":"smooth",block:"start"});return}
+ const jump=e.target.closest("[data-jump]");if(jump){const target=$("#"+jump.dataset.jump);target.scrollIntoView({behavior:reduceMotion()?"auto":"smooth",block:"start"});target.querySelector("button")?.focus({preventScroll:true});return}
  const close=e.target.closest("[data-close]");if(close){close.closest("dialog").close();return}
  const action=e.target.closest("[data-action]");
- if(action){switch(action.dataset.action){case"preferences":syncPreferenceControls();openDialog("preferences-dialog");break;case"report":openReport();break;case"method":$("#method-body").innerHTML=methodContent();openDialog("method-dialog");break;case"library":library();break;case"save":$("#study-name").value=ws.names[ws.active];openDialog("save-dialog");break;case"reset":ws.states[ws.active]=S.defaults(ws.active);ui().progress=0;ui().selected=null;if(scene){scene.selected=null;scene.reset()}resetObserver();$("#expanded-observer").hidden=true;renderSettings();renderAll();notify("已恢复本场景默认参数");break}return}
+ if(action){switch(action.dataset.action){case"preferences":syncPreferenceControls();openDialog("preferences-dialog");break;case"report":openReport();break;case"method":$("#method-body").innerHTML=methodContent();openDialog("method-dialog");break;case"library":library();break;case"save":$("#study-name").value=ws.names[ws.active];openDialog("save-dialog");break;case"reset":{const defaults=S.defaults(ws.active);config().controls.filter(c=>!c.scheme).forEach(c=>state().params[c.key]=defaults.params[c.key]);state().objective=defaults.objective;state().weights=defaults.weights;renderSettings();renderAll();notify("已恢复比较条件，策略设置已保留");break}}return}
  const load=e.target.closest("[data-load-study]");if(load){const item=ws.studies.find(x=>x.id===load.dataset.loadStudy);if(item){ws.states[item.module]=S.normalise(item.module,item.state);ws.names[item.module]=item.name;setModule(item.module,{force:true,resetPlayback:true});notify("已打开「"+item.name+"」")}return}
  const del=e.target.closest("[data-delete-study]");if(del){const item=ws.studies.find(x=>x.id===del.dataset.deleteStudy);if(item){if(del.dataset.confirm!=="true"){del.dataset.confirm="true";del.title="再次点击确认删除";del.setAttribute("aria-label","确认删除 "+item.name);del.style.color="#ac6d54";del.innerHTML='<i data-lucide="check"></i>';icons();return}ws.studies=ws.studies.filter(x=>x.id!==item.id);persist();library();notify("研究已移除，当前工作台设置仍然保留")}return}
 });
+
+function editParam(el){
+ const c=config().controls.find(c=>c.key===el.dataset.param),target=state().scheme==="custom"&&c.scheme?state().custom.params:state().params;
+ if(c.type!=="select"&&el.value===""){el.value=target[c.key];return}
+ target[c.key]=c.type==="select"?el.value:+el.value;scheduleRender();
+}
 document.addEventListener("input",e=>{
- const el=e.target;if(el.matches("[data-param][type=range]")){state().params[el.dataset.param]=+el.value;scheduleRender()}
+ const el=e.target;if(el.matches("[data-param][type=range]"))editParam(el);
  if(el.matches("[data-weight]"))applyWeight(+el.dataset.weight,+el.value);
 });
-document.addEventListener("change",e=>{const el=e.target;if(el.matches("[data-param]:not([type=range])")){const c=config().controls.find(c=>c.key===el.dataset.param);if(c.type!=="select"&&el.value===""){el.value=state().params[c.key];return}state().params[c.key]=c.type==="select"?el.value:+el.value;renderAll()}});
+document.addEventListener("change",e=>{if(e.target.matches("[data-param]:not([type=range])"))editParam(e.target)});
+function showStrategyEditor(open){$("#strategy-editor").classList.toggle("is-collapsed",!open);$("#strategy-toggle").setAttribute("aria-expanded",String(open));$("#strategy-toggle").innerHTML=(open?"收起细节":"调整策略参数")+'<i data-lucide="'+(open?"chevron-up":"chevron-down")+'"></i>';icons()}
+function createCustom(){
+ const s=state();s.custom={enabled:true,name:{merchant:"我的促销策略",growth:"我的引导策略",public:"我的服务策略"}[ws.active],baseScheme:s.scheme==="member"?"member":"open",params:Object.fromEntries(config().controls.filter(c=>c.scheme).map(c=>[c.key,s.params[c.key]]))};s.scheme="custom";
+}
+function chooseStrategy(id){
+ flushRender();if(id==="custom"&&!state().custom.enabled)createCustom();else state().scheme=id;
+ if(ui().progress>=1){ui().progress=0;ui().playing=false;if(scene)scene.setProgress(0)}
+ renderSettings();renderAll();showStrategyEditor(true);persistUI();
+ requestAnimationFrame(()=>$('[data-scheme="'+id+'"]')?.focus({preventScroll:true}));
+}
+$("#strategy-toggle").addEventListener("click",()=>showStrategyEditor($("#strategy-editor").classList.contains("is-collapsed")));
+$("#copy-strategy").addEventListener("click",()=>{
+ if(state().custom.enabled&&$("#copy-strategy").dataset.confirm!=="true"){$("#copy-strategy").dataset.confirm="true";$("#copy-strategy").textContent="再次点击，替换我的策略";return}
+ createCustom();renderSettings();renderAll();showStrategyEditor(true);$("#copy-strategy").dataset.confirm="false";$("#custom-name").focus();
+});
+$("#custom-name").addEventListener("input",e=>{state().custom.name=e.target.value.trim().slice(0,40)||"我的策略";renderStrategyChoices();scheduleRender()});
+$("#custom-name").addEventListener("blur",()=>{$("#custom-name").value=state().custom.name});
+$("#custom-template").addEventListener("change",e=>{state().custom.baseScheme=e.target.value;renderSettings();renderAll();$("#custom-template").focus()});
+$("#preview-strategy").addEventListener("click",()=>{flushRender();ui().progress=0;ui().playing=!reduceMotion();if(scene)scene.setProgress(0);setView("world");updateScene();$(".world-panel").scrollIntoView({behavior:reduceMotion()?"auto":"smooth",block:"start"});$("#play").focus({preventScroll:true});persistUI();notify(reduceMotion()?"已准备当前策略；点击播放观察人物行为":"正在从第 1 天预演「"+result().selected.name+"」")});
 $("#objective").addEventListener("change",e=>{state().objective=e.target.value;renderAll()});
 $("#reset-audience").addEventListener("click",()=>{state().weights=S.defaults(ws.active).weights;renderAll();notify("已恢复当前场景的人群结构")});
 function stopScrub(){if(!scrubbing)return;scrubbing=false;ui().playing=scrubWasPlaying&&scene.progress<1;syncScenePlayback();persistUI()}
@@ -289,5 +348,5 @@ motionQuery.addEventListener("change",()=>{if(motionQuery.matches){S.modules.for
 window.addEventListener("pagehide",()=>{if(scene){ui().progress=scene.progress;ui().camera=scene.getCamera()}flushPersist();persistUI(true)});
 window.addEventListener("resize",()=>{cancelTransition()},{passive:true});
 window.YanceApp={getWorkspace:()=>copy(ws),getState:()=>copy(state()),getModule:()=>config(),compute:result,setModule,setView,getInterface:()=>copy({preferences:prefs,modules:moduleUI,currentView}),flush:()=>{flushRender();flushPersist();persistUI(true)}};
-currentView=ui().view;if(reduceMotion())ui().playing=false;viewMarkup(currentView);applyPreferences();renderModule();if(currentView==="comparison")comparison();updateScene();icons();persist();
+currentView=ui().view;if(reduceMotion())ui().playing=false;viewMarkup(currentView);applyPreferences();renderModule();showStrategyEditor(false);if(currentView==="comparison")comparison();updateScene();icons();persist();
 })();

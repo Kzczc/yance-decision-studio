@@ -22,7 +22,7 @@
 
   var modules = [
     {
-      id: "growth", title: "企业增长", english: "Product adoption", icon: "chart-no-axes-combined", order: 1,
+      id: "growth", title: "GrowthLab", productLabel: "企业增长", english: "Product adoption", audience: "企业与业务团队", icon: "chart-no-axes-combined", order: 1,
       subtitle: "评估产品引导调整对激活与留存的影响。",
       decision: "首次使用流程应保留几步？哪些新用户需要人工引导？",
       worldTitle: "产品旅程街区", worldSubtitle: "跟踪用户从初次到访、完成关键操作到持续使用的旅程。",
@@ -67,7 +67,7 @@
       validation: ["按用户随机分组；预先固定新用户资格、分流比例与激活事件。", "同步记录激活率、激活后 7 日留存、人工支持工时与投诉。", "待各组最后一位用户满 7 日观察期后，再比较留存结果。"]
     },
     {
-      id: "merchant", title: "商户经营", english: "Local commerce", icon: "store", order: 2,
+      id: "merchant", title: "BizLab", productLabel: "商户经营", english: "Local commerce", audience: "店主与个体经营者", icon: "store", order: 2,
       subtitle: "比较优惠策略对成交、实收与贡献毛利的影响。",
       decision: "新品首发应面向所有顾客提供优惠，还是定向回馈会员？",
       worldTitle: "社区商业街区", worldSubtitle: "跟踪到店、选购与结账过程，比较不同顾客对经营方案的反应。",
@@ -109,7 +109,7 @@
       validation: ["预先固定会员口径、优惠资格、预算耗尽规则与活动周期。", "以每位触达顾客的贡献毛利为主指标，并同步记录订单、退款与优惠核销。", "三组同期随机分流；结合历史波动计算样本量后再评估经营效果。"]
     },
     {
-      id: "public", title: "公共服务", english: "Public services", icon: "landmark", order: 3,
+      id: "public", title: "PolicyLab", productLabel: "政策决策", english: "Public services", audience: "政府与公共机构", icon: "landmark", order: 3,
       subtitle: "比较服务时段与网点安排对办理量、可达性和增量成本的影响。",
       decision: "增设晚间或周末窗口，还是开设社区流动服务点？",
       worldTitle: "社区服务网络", worldSubtitle: "沿着查询、到场与办理流程，比较不同服务资源配置。",
@@ -156,6 +156,8 @@
     config.metricLabels = {};
     config.metrics.concat(config.tableMetrics).forEach(function (m) { config.metricLabels[m.key] = m.label; });
     config.controls.forEach(function (c) { c.default = config.defaultState.params[c.key]; });
+    config.defaultState.custom = { enabled: false, name: "我的策略", baseScheme: config.defaultState.scheme === "member" ? "member" : "open", params: {} };
+    config.controls.filter(function (c) { return c.scheme; }).forEach(function (c) { config.defaultState.custom.params[c.key] = c.default; });
   });
 
   function clone(value) { return JSON.parse(JSON.stringify(value)); }
@@ -177,7 +179,26 @@
         if (["supportAgents", "daily", "demand", "baseCapacity", "capacityA", "mobileCapacityB", "stepsA"].indexOf(c.key) !== -1) base.params[c.key] = Math.round(base.params[c.key]);
       }
     });
+    // A custom candidate may change strategy controls, never the shared comparison conditions.
+    // Legacy saved studies receive an independent, disabled draft from the module defaults.
+    var owns = function (object, key) { return Object.prototype.hasOwnProperty.call(object, key); };
+    var custom = owns(raw, "custom") && raw.custom && typeof raw.custom === "object" && !Array.isArray(raw.custom) ? raw.custom : {};
+    var customParams = owns(custom, "params") && custom.params && typeof custom.params === "object" && !Array.isArray(custom.params) ? custom.params : {};
+    base.custom.enabled = owns(custom, "enabled") && custom.enabled === true;
+    if (owns(custom, "name") && typeof custom.name === "string" && custom.name.trim()) base.custom.name = custom.name.trim().slice(0, 40);
+    if (owns(custom, "baseScheme") && (custom.baseScheme === "open" || custom.baseScheme === "member")) base.custom.baseScheme = custom.baseScheme;
+    config.controls.filter(function (c) { return c.scheme; }).forEach(function (c) {
+      if (!owns(customParams, c.key)) return;
+      if (c.type === "select") {
+        var matched = c.options.find(function (option) { return String(option.value) === String(customParams[c.key]); });
+        if (matched) base.custom.params[c.key] = matched.value;
+      } else if (customParams[c.key] !== undefined) {
+        base.custom.params[c.key] = clamp(finite(customParams[c.key], base.custom.params[c.key]), c.min, c.max);
+        if (["supportAgents", "capacityA", "mobileCapacityB", "stepsA"].indexOf(c.key) !== -1) base.custom.params[c.key] = Math.round(base.custom.params[c.key]);
+      }
+    });
     if (config.schemes.some(function (s) { return s.id === raw.scheme; })) base.scheme = raw.scheme;
+    if (raw.scheme === "custom" && base.custom.enabled) base.scheme = "custom";
     if (config.objectives.some(function (o) { return o.value === raw.objective; })) base.objective = raw.objective;
     if (Array.isArray(raw.weights) && raw.weights.length === 4) {
       var weights = raw.weights.map(function (w) { return clamp(finite(w, 0), 0, 100); }), total = sum(weights);
@@ -268,24 +289,33 @@
 
   function compute(moduleId, input) {
     var config = getModule(moduleId), state = normalise(config.id, input);
-    var result = config.id === "growth" ? growth(config, state) : config.id === "public" ? publicService(config, state) : merchant(config, state);
+    var model = config.id === "growth" ? growth : config.id === "public" ? publicService : merchant;
+    var result = model(config, state);
+    var customEffectiveParams = Object.assign({}, state.params, state.custom.params);
+    if (state.custom.enabled) {
+      var customState = Object.assign({}, state, { scheme: state.custom.baseScheme, params: customEffectiveParams });
+      var customRow = model(config, customState).rows.find(function (row) { return row.id === state.custom.baseScheme; });
+      result.rows.push(Object.assign({}, customRow, { id: "custom", name: state.custom.name, short: state.custom.name, tag: "我的策略", sceneScheme: state.custom.baseScheme }));
+    }
     var best = result.rows.reduce(function (a, b) {
       var diff = b[state.objective] - a[state.objective];
       return diff > 1e-9 || (Math.abs(diff) <= 1e-9 && b.cost < a.cost - 1e-9) ? b : a;
     }, result.rows[0]);
     var selected = result.rows.find(function (r) { return r.id === state.scheme; }) || result.rows[0];
+    var selectedScheme = selected.sceneScheme || selected.id;
+    var selectedParams = selected.id === "custom" ? customEffectiveParams : Object.assign({}, state.params);
     var objectiveLabel = config.objectives.find(function (o) { return o.value === state.objective; }).label;
     var notes = [];
     if (selected.coverage < 0.999999) notes.push(config.id === "growth" ? "当前方案受预算或服务能力限制，实际覆盖已相应缩减。" : "当前预算无法覆盖全部计划，测算已按可承担规模调整。");
-    if (config.id === "merchant" && state.params.cost > state.params.price) notes.push("单件变动成本高于售价，原价销售也会产生负贡献毛利。请核对售价与成本。");
-    if (config.id === "merchant" && ((selected.id === "open" && state.params.couponA > state.params.price) || (selected.id === "member" && state.params.couponB > state.params.price))) notes.push("优惠金额已按商品售价封顶，实付价格最低为 0 元。");
+    if (config.id === "merchant" && selectedParams.cost > selectedParams.price) notes.push("单件变动成本高于售价，原价销售也会产生负贡献毛利。请核对售价与成本。");
+    if (config.id === "merchant" && ((selectedScheme === "open" && selectedParams.couponA > selectedParams.price) || (selectedScheme === "member" && selectedParams.couponB > selectedParams.price))) notes.push("优惠金额已按商品售价封顶，实付价格最低为 0 元。");
     if (config.id === "growth") notes.push("7 日留存按用户激活后单独计时，完整观察期为进入窗口结束后再加 7 天。");
     if (config.id === "public" && selected.unusedCapacity > 0.01) notes.push("部分新增名额没有对应的可到场需求；已安排的名额仍计入运营费用。");
     if (config.id === "public" && state.weights[2] + state.weights[3] === 0) notes.push("当前未配置老年居民或行动不便居民，重点居民覆盖率按 0 显示，不代表整体服务质量。");
     notes.push("情景测算基于当前参数与预设响应规则；可用于比较方案，实际实施前应以业务数据校准并验证。");
     var recommendation = best.id === "baseline" ? "当前假设下，保留现有方案更符合「" + objectiveLabel.replace(/^提高/, "") + "」目标。可继续调整资源与客群结构。" : "优先验证「" + best.name + "」。在当前假设下，它更符合「" + objectiveLabel.replace(/^提高/, "") + "」目标。";
-    return Object.assign(result, { moduleId: config.id, state: state, selected: selected, best: best, metrics: config.metrics, tableMetrics: config.tableMetrics, recommendation: recommendation, notes: notes, assumptions: config.assumptions, validation: config.validation });
+    return Object.assign(result, { moduleId: config.id, state: state, selected: selected, selectedParams: selectedParams, selectedScheme: selectedScheme, best: best, metrics: config.metrics, tableMetrics: config.tableMetrics, recommendation: recommendation, notes: notes, assumptions: config.assumptions, validation: config.validation });
   }
 
-  global.YanceScenarios = { modules: modules, compute: compute, defaults: defaults, normalise: normalise, getModule: getModule, version: "1.0.0" };
+  global.YanceScenarios = { modules: modules, compute: compute, defaults: defaults, normalise: normalise, getModule: getModule, version: "1.1.0" };
 })(typeof window !== "undefined" ? window : globalThis);
