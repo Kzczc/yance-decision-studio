@@ -8,7 +8,7 @@ let ws={active:"merchant",states:{},names:{},studies:[]},scene=null,configuring=
 const UI_STORE="yance-interface-v1",motionQuery=matchMedia("(prefers-reduced-motion: reduce)");
 const preferenceDefaults={textScale:100,density:"comfortable",sceneSize:"balanced",motion:"system",autoplay:true,speed:1,hints:true};
 let prefs={...preferenceDefaults},moduleUI={},saveTimer,uiSaveTimer,renderFrame=0,transitionAnimations=[],switchVersion=0,scrubbing=false,scrubWasPlaying=false,changingModule=false;
-let resultKey="",resultMemo=null,feedbackKey="";const customUndo={};let rangeUndoKey=null;const dialogFocus=new WeakMap();
+let resultKey="",resultMemo=null,feedbackKey="",navigationFrame=0;const customUndo={};let rangeUndoKey=null;const dialogFocus=new WeakMap();
 try{const stored=JSON.parse(localStorage.getItem(UI_STORE)||"null");if(stored&&typeof stored==="object"){const p=stored.preferences||{};for(const [key,allowed] of Object.entries({textScale:[100,112,125],density:["comfortable","compact"],sceneSize:["compact","balanced","large"],motion:["system","reduce"],speed:[1,2,4]})){if(allowed.includes(p[key]))prefs[key]=p[key]}for(const key of ["autoplay","hints"])if(typeof p[key]==="boolean")prefs[key]=p[key];if(stored.modules&&typeof stored.modules==="object")moduleUI=stored.modules}}catch{}
 const validatedUI=new Set();
 const reduceMotion=()=>prefs.motion==="reduce"||motionQuery.matches;
@@ -73,16 +73,16 @@ function renderModule(){
  const c=config();document.documentElement.dataset.product=c.id;moduleMenu();$("#module-caption").textContent=(c.audience||c.title)+" · "+c.title;$("#study-title").textContent=c.strategyTitle;$("#study-decision").textContent=c.decision;$("#world-title").textContent={growth:"创新园区 · 产品体验",merchant:"滨水商街 · 新品集市",public:"市民广场 · 社区服务"}[c.id];renderEnvironment();
  $("#audience-title").textContent=c.audienceTitle;$("#audience-definition").textContent=c.audienceNote;$("#visitor-select").dataset.signature="";
  $("#world-legend").innerHTML=c.segments4.map(s=>'<span style="--seg:'+s.color+'"><i></i>'+s.name+'</span>').join("");
- $("#audience-cards").innerHTML=c.segments4.map((s,i)=>'<article class="audience-card" style="--seg:'+s.color+';--seg-soft:'+s.color+'20"><div class="audience-head"><div class="audience-avatar"></div><div><h4>'+s.name+'</h4><small>'+s.short+'</small></div></div><strong data-weight-label="'+i+'"></strong><p>'+s.desc+'</p><input data-weight="'+i+'" type="range" min="2" max="94" step="1" aria-label="'+s.name+'占比"></article>').join("");
+ $("#audience-cards").innerHTML=c.segments4.map((s,i)=>'<article class="audience-card" style="--seg:'+s.color+';--seg-soft:'+s.color+'20"><div class="audience-head"><div class="audience-avatar">'+avatar(i,s.color)+'</div><div><h4>'+s.name+'</h4><small>'+s.short+'</small></div></div><label class="audience-amount"><span class="sr-only">'+safeText(s.name)+'比例</span><input data-weight-number="'+i+'" type="number" min="2" max="94" step="1"><span>%</span></label><p>'+s.desc+'</p><input data-weight="'+i+'" type="range" min="2" max="94" step="1" aria-label="'+s.name+'占比"></article>').join("");
  resetObserver();renderSettings();renderAll({sceneUpdate:false});$("#report-name").value=ws.names[ws.active];icons()
 }
-function resetObserver(){lastProfile=null;$("#observer-title").textContent="选择一位观察对象";$("#observer-status").textContent="人物详情";$("#observer-quote").textContent="点击场景人物或选择人群，查看当前行为与反馈。";$("#visitor-select").value="";$("#portrait").style.background="";$("#portrait").innerHTML=avatar(1,"#7895aa");$("#expanded-observer-name").textContent="选择场景人物";$("#expanded-observer-quote").textContent="查看其当前行为与反馈。";$("#expanded-observer").hidden=true}
+function resetObserver(){lastProfile=null;$("#observer-title").textContent="选择一位观察对象";$("#observer-status").textContent="";$("#observer-status").hidden=true;$("#observer-quote").textContent="点击人物，查看其当前行动与反馈。";$("#visitor-select").value="";$("#portrait").style.background="";$("#portrait").innerHTML=avatar(1,"#7895aa");$("#expanded-observer-name").textContent="选择场景人物";$("#expanded-observer-quote").textContent="查看其当前行为与反馈。";$("#expanded-observer").hidden=true}
 function renderMix(){
  const c=config(),s=state();
  const marks=s.weights.map((w,i)=>'<span style="width:'+w+'%;background:'+c.segments4[i].color+'"></span>').join("");
- const legend=c.segments4.map((g,i)=>'<span style="--seg:'+g.color+'"><i></i>'+g.name+" "+nr(s.weights[i],Number.isInteger(s.weights[i])?0:1)+'%</span>').join("");
+ const legend=c.segments4.map((g,i)=>'<span style="--seg:'+g.color+'"><i></i><span class="mix-name">'+safeText(g.name)+'</span><b class="mix-value">'+nr(s.weights[i],Number.isInteger(s.weights[i])?0:1)+'%</b></span>').join("");
  $("#mini-mix").innerHTML=marks;$("#full-mix").innerHTML=marks;$("#mix-summary").innerHTML=legend;$("#full-mix-legend").innerHTML=legend;$("#mini-mix").setAttribute("aria-label",c.segments4.map((g,i)=>g.name+" "+nr(s.weights[i],1)+"%").join("，"));
- $$("[data-weight]").forEach(el=>{const i=+el.dataset.weight;el.value=s.weights[i];$('[data-weight-label="'+i+'"]').textContent=nr(s.weights[i],Number.isInteger(s.weights[i])?0:1)+"%"});
+ $$("[data-weight]").forEach(el=>{const i=+el.dataset.weight;el.value=s.weights[i];$('[data-weight-number="'+i+'"]').value=nr(s.weights[i],Number.isInteger(s.weights[i])?0:1)});
 }
 
 function avatar(id,color){const hair=['#514b46','#846049','#384c4b','#705747'][id%4];return '<svg viewBox="0 0 24 30" shape-rendering="crispEdges" class="person-avatar" aria-hidden="true"><path fill="'+hair+'" d="M8 3h8v2h2v7H6V5h2Z"/><path fill="#ddb796" d="M8 7h8v7H8Z"/><path fill="#394c46" d="M9 9h1v1H9Zm5 0h1v1h-1Z"/><path fill="'+color+'" d="M6 14h12v9H6Zm-2 2h2v8H4Zm14 0h2v8h-2Z"/><path fill="#536166" d="M7 23h4v5H7Zm6 0h4v5h-4Z"/><path fill="#344449" d="M6 27h5v2H6Zm7 0h5v2h-5Z"/></svg>'}
@@ -150,7 +150,7 @@ function selectPerson(profile){
  if(!profile){resetObserver();return}
  const signature=JSON.stringify(profile);if(lastProfile&&JSON.stringify(lastProfile)===signature)return;lastProfile=profile;
  const idx=config().segments4.findIndex(s=>s.name===profile.segment||s.id===profile.segment),seg=config().segments4[idx]||config().segments4[0];ui().selected=profile.id;
- $("#observer-title").textContent=profile.name+" / "+seg.name;$("#observer-status").textContent=profile.status;$("#observer-quote").textContent=profile.quote||seg.quote;$("#portrait").style.background=seg.color+"25";$("#portrait").innerHTML=avatar(profile.id,seg.color);$("#visitor-select").value=String(profile.id);
+ $("#observer-title").textContent=profile.name+" / "+seg.name;$("#observer-status").textContent=profile.status;$("#observer-status").hidden=false;$("#observer-quote").textContent=profile.quote||seg.quote;$("#portrait").style.background=seg.color+"25";$("#portrait").innerHTML=avatar(profile.id,seg.color);$("#visitor-select").value=String(profile.id);
  $("#expanded-observer-name").textContent=profile.name+" / "+seg.name+" · "+profile.status;$("#expanded-observer-quote").textContent=profile.quote||seg.quote;
  $("#expanded-observer").hidden=!isExpanded();persistUI();
 }
@@ -161,7 +161,7 @@ function deltaText(row,base,meta){
 }
 function strategyFeedback(){
  const r=result(),c=config(),s=state(),p=r.selectedParams||s.params,base=r.rows[0],scheme=r.selectedScheme||s.scheme;
- const guidance={growth:{baseline:["先看现有流程的流失","用现状作为起点，再比较精简步骤或人工帮助是否值得投入。"],open:["重点看：步骤少了，留存是否增加","减少首次操作步骤会影响激活与后续留存；同时留意服务投入。"],member:["重点看：人工帮助覆盖了多少人","比较被帮助的新用户、7 日留存与服务成本，判断人手是否足够。"]},merchant:{baseline:["先看不优惠时的成交与毛利","保留原价作为参照，避免只看到订单增加，却忽略优惠成本。"],open:["重点看：多卖出的商品，能否覆盖优惠","同时看成交和贡献毛利。提高优惠力度不一定让利润更高。"],member:["重点看：把优惠给谁，更值得","调整会员范围与金额，比较定向成交、优惠投入和贡献毛利。"]},public:{baseline:["先看现有窗口能完成多少需求","以现有服务能力为参照，观察还剩多少办事需求未被满足。"],open:["重点看：延长时段，能多办成多少事","比较新增办理量、重点居民覆盖与运营支出，检查名额是否用得上。"],member:["重点看：服务走近居民后，谁更方便","比较流动点的完成办理量和重点居民覆盖，留意可用预算。"]}};
+ const guidance={growth:{baseline:["现有流程表现","用现状作为起点，再比较精简步骤或人工帮助是否值得投入。"],open:["激活与留存","减少首次操作步骤会影响激活与后续留存；同时留意服务投入。"],member:["人工支持的覆盖与成本","比较被帮助的新用户、7 日留存与服务成本，判断人手是否足够。"]},merchant:{baseline:["原价销售表现","保留原价作为参照，避免只看到订单增加，却忽略优惠成本。"],open:["成交与贡献毛利","同时看成交和贡献毛利。提高优惠力度不一定让利润更高。"],member:["会员范围与优惠投入","调整会员范围与金额，比较定向成交、优惠投入和贡献毛利。"]},public:{baseline:["现有窗口能力","以现有服务能力为参照，观察还剩多少办事需求未被满足。"],open:["新增办理量与运营费用","比较新增办理量、重点居民覆盖与运营支出，检查名额是否用得上。"],member:["完成办理与重点覆盖","比较流动点的完成办理量和重点居民覆盖，留意可用预算。"]}};
  const [title,desc]=guidance[c.id][scheme]||guidance[c.id].baseline;$("#focus-title").textContent=title;$("#focus-copy").textContent=desc;
  const keys=c.id==="merchant"?[r.chartKey,r.chartKey==="margin"?"orders":"margin","subsidy"]:c.id==="growth"?[r.chartKey,r.chartKey==="retained"?"activated":"retained","cost"]:[r.chartKey,r.chartKey==="served"?"access":"served","cost"];
  const all=c.metrics.concat(c.tableMetrics),metrics=keys.map(key=>all.find(m=>m.key===key)).filter(Boolean);
@@ -194,7 +194,7 @@ function comparison(){
  const low=Math.min(0,...r.rows.map(row=>row[r.chartKey])),high=Math.max(1,...r.rows.map(row=>row[r.chartKey])),range=high-low,zero=-low/range*100;
  $("#result-chart").innerHTML=r.rows.map(row=>{const value=row[r.chartKey],left=value<0?(value-low)/range*100:zero;return'<div class="chart-row '+(row.id===r.selected.id?"selected":"")+'"><span>'+safeText(row.short)+'</span><div class="chart-track" role="img" aria-label="'+safeText(row.name)+' '+fmt(value,m)+'"><div class="zero-line" style="left:'+zero+'%"></div><div class="chart-bar '+(value<0?"loss":"")+'" style="left:'+left+'%;width:'+Math.abs(value)/range*100+'%"></div></div><b>'+fmt(value,m)+'</b></div>'}).join("");
  const top=state().weights.indexOf(Math.max(...state().weights)),difference=r.selected[r.chartKey]-r.rows[0][r.chartKey];
- const n=[{title:"评价目标决定优先级",text:c.objectives.find(o=>o.value===state().objective).label+"是当前评价目标。"+(difference>1e-8?"当前选择较现状增加 "+(m.format==="percent"?nr(difference,1)+" 个百分点":fmt(difference,m))+"。":"当前选择未高于现状，可结合资源投入继续比较。")},{title:"人群结构是一项关键假设",text:c.segments4[top].name+"占比 "+nr(state().weights[top],1)+"%。建议重点验证这一人群的行为基线与响应。"}].concat(r.notes.map((note,i)=>({title:i===r.notes.length-1?"落地前需要验证":r.selected.short+" · 资源边界",text:note})));
+ const n=[{title:"与现状的差异",text:c.objectives.find(o=>o.value===state().objective).label+"是当前评价目标。"+(difference>1e-8?"当前选择较现状增加 "+(m.format==="percent"?nr(difference,1)+" 个百分点":fmt(difference,m))+"。":"当前选择未高于现状，可结合资源投入继续比较。")},{title:"主要人群",text:c.segments4[top].name+"占比 "+nr(state().weights[top],1)+"%。建议重点验证这一人群的行为基线与响应。"}].concat(r.notes.map((note,i)=>({title:i===r.notes.length-1?"测算说明":r.selected.short+" · 资源边界",text:note})));
  $("#insights").innerHTML=n.map(x=>'<div class="insight"><h4>'+safeText(x.title)+'</h4><p>'+safeText(x.text)+'</p></div>').join("");
  $("#comparison-population").textContent=nr(r.reach)+" "+(ws.active==="public"?"人次需求":"人触达")+" / "+state().params.days+" 天";
  const temp=document.createElement("table");temp.innerHTML=tableMarkup(r);$("#table-head").innerHTML=temp.tHead.innerHTML;$("#table-body").innerHTML=temp.tBodies[0].innerHTML;
@@ -203,16 +203,14 @@ function comparison(){
 function renderAll({sceneUpdate=true}={}){
  ws.states[ws.active]=S.normalise(ws.active,state());syncControls();renderMix();cards();if(currentView==="comparison")comparison();if(sceneUpdate)updateScene();persist();
 }
-function cancelTransition(){transitionAnimations.forEach(a=>a.cancel());transitionAnimations=[];$("#view-host").style.height="";$("#view-host").classList.remove("switching")}
-function transitionView(change,{targetView=currentView,focus=false,scroll=false}={}){
- const host=$("#view-host"),oldHeight=host.getBoundingClientRect().height,token=++switchVersion;
- cancelTransition();change();const panel=$("#view-"+targetView),newHeight=panel.getBoundingClientRect().height;
- if(!reduceMotion()&&oldHeight&&newHeight){host.style.height=oldHeight+"px";host.classList.add("switching");
- const a=host.animate([{height:oldHeight+"px"},{height:newHeight+"px"}],{duration:190,easing:"cubic-bezier(.2,.7,.2,1)",fill:"forwards"});
- const fade=panel.animate([{opacity:.45},{opacity:1}],{duration:160,easing:"ease-out"});transitionAnimations=[a,fade];
- a.finished.then(()=>{if(token===switchVersion){host.style.height="";host.classList.remove("switching");a.cancel();transitionAnimations=[]}}).catch(()=>{});
- }
- if(scroll){const anchor=$(".view-tabs").getBoundingClientRect().top+scrollY-18,target=Math.max(anchor,Number(ui().scrolls[targetView])||anchor);window.scrollTo({top:target,behavior:reduceMotion()?"auto":"smooth"})}
+function cancelTransition(){transitionAnimations.forEach(a=>a.cancel());transitionAnimations=[];cancelAnimationFrame(navigationFrame);navigationFrame=0;$("#view-host").style.height="";$("#view-host").classList.remove("switching")}
+function scrollToView(target){const element=target==="scene"?$(".world-panel"):$(".view-tabs");element.scrollIntoView({behavior:reduceMotion()?"instant":"smooth",block:"start"})}
+function transitionView(change,{targetView=currentView,focus=false,scroll=false,anchor=null}={}){
+ cancelTransition();window.scrollTo({top:scrollY,behavior:"instant"});const before=anchor?.getBoundingClientRect().top;
+ change();const panel=$("#view-"+targetView);
+ if(anchor&&Number.isFinite(before))window.scrollBy({top:anchor.getBoundingClientRect().top-before,behavior:"instant"});
+ if(!reduceMotion()){const fade=panel.animate([{opacity:.8},{opacity:1}],{duration:140,easing:"ease-out"});transitionAnimations=[fade];fade.finished.then(()=>{fade.cancel();transitionAnimations=transitionAnimations.filter(a=>a!==fade)}).catch(()=>{})}
+ if(scroll)navigationFrame=requestAnimationFrame(()=>{navigationFrame=0;scrollToView(scroll)});
  if(focus)panel.focus({preventScroll:true});
  if(currentView==="world")requestAnimationFrame(()=>scene?.resize());
 }
@@ -222,23 +220,24 @@ function viewMarkup(name){
  $$("[data-view]").forEach(el=>{const on=el.dataset.view===name;el.classList.toggle("active",on);if(el.getAttribute("role")==="tab"){el.setAttribute("aria-selected",on?"true":"false");el.tabIndex=on?0:-1}});
 }
 function setView(name,options={}){
- if(!["world","comparison","audience"].includes(name))return;if(name===currentView){if(options.source&&!options.source.closest(".view-tabs"))$(".view-tabs").scrollIntoView({behavior:reduceMotion()?"auto":"smooth",block:"start"});return}
- flushRender();ui().scrolls[currentView]=scrollY;const fromContent=options.source&&!options.source.closest(".view-tabs");
- const scroll=fromContent||scrollY>$(".view-tabs").getBoundingClientRect().top+scrollY+30;
- transitionView(()=>{viewMarkup(name);if(name==="comparison")comparison();syncScenePlayback()}, {targetView:name,focus:!!fromContent,scroll});
- persistUI();
+ if(!["world","comparison","audience"].includes(name))return;
+ const fromContent=!!options.source&&!options.source.closest(".view-tabs"),target=options.target||(fromContent?"view":false);
+ if(name===currentView){if(target){cancelTransition();scrollToView(target)}return}
+ flushRender();transitionView(()=>{viewMarkup(name);if(name==="comparison")comparison();syncScenePlayback()},{targetView:name,focus:fromContent,scroll:target,anchor:target?null:$(".view-tabs")});persistUI();
 }
 function setModule(id,{force=false,resetPlayback=false}={}){
- if(!S.modules.some(m=>m.id===id)||(!force&&id===ws.active))return;flushRender();ui().scrolls[currentView]=scrollY;
+ if(!S.modules.some(m=>m.id===id))return;if(!force&&id===ws.active){setView("world",{target:"scene"});return}flushRender();
+ const nav=$("#module-tabs"),restoreFocus=document.activeElement?.hasAttribute("data-module");
  if(scene){ui().progress=scene.progress;ui().camera=scene.getCamera()}
  closeDialogs();changingModule=true;if(scene)scene.setVisible(false);
- ws.active=id;const saved=ui();if(resetPlayback){saved.progress=0;saved.view="world";saved.selected=null}currentView=saved.view;lastProfile=null;
- transitionView(()=>{viewMarkup(currentView);renderModule();if(currentView==="comparison")comparison();changingModule=false;updateScene()},{targetView:currentView});
+ ws.active=id;const saved=ui();saved.view="world";if(resetPlayback){saved.progress=0;saved.selected=null}currentView="world";lastProfile=null;
+ transitionView(()=>{viewMarkup(currentView);renderModule();if(currentView==="comparison")comparison();changingModule=false;updateScene()},{targetView:currentView,scroll:"scene"});
+ if(restoreFocus)$('[data-module="'+id+'"]').focus({preventScroll:true});
  persist();persistUI();try{const url=new URL(location.href);url.searchParams.set("scene",id);history.replaceState(null,"",url)}catch{}
 }
 function methodContent(){
  const c=config();
- return'<div class="method-source"><b>当前来源：'+c.title+'行业情景样例</b><br>人群基线与策略响应采用预设假设，适合方案比较与研究讨论。真实业务结论需要使用获授权的数据进行校准与验证。</div><h3>'+c.title+'的测算口径</h3><ul>'+c.assumptions.map(a=>'<li>'+safeText(a)+'</li>').join("")+'</ul><h3>动态场景与总体指标</h3><p>小镇中的人物是可调数量的行为可视化样本，不与全部触达用户逐一对应。总体指标按完整周期与人群结构计算；场景人数可随每日规模调整，也可手动设置为 8–128 人。人群分布与完成概率遵循当前模型的分群结果，动画样本不等同于实际业务总人数。当前版本未连接后台推理或真实业务数据。</p><h3>保存与隐私</h3><p>设置与研究记录仅保存在当前浏览器，不上传服务器。下载的报告可独立保留；清除浏览器数据会移除本地研究记录。</p><h3>素材与字体</h3><p>像素地形采用 Kenney Tiny Town（CC0），人物与场景交互为原创绘制。中文标题使用 Noto Serif SC，正文使用 Noto Sans SC；英文字体以 Georgia 与系统衬线字体配合。字体与图标许可随网站代码保留。</p>';
+ return'<div class="method-source"><b>当前来源：'+c.title+'行业情景样例</b><br>人群基线与策略响应采用预设假设，适合方案比较与研究讨论。真实业务结论需要使用获授权的数据进行校准与验证。</div><h3>'+c.title+'的测算口径</h3><ul>'+c.assumptions.map(a=>'<li>'+safeText(a)+'</li>').join("")+'</ul><h3>动态场景与总体指标</h3><p>小镇中的人物是可调数量的行为可视化样本，不与全部触达用户逐一对应。总体指标按完整周期与人群结构计算；场景人数可随每日规模调整，也可手动设置为 8–128 人。人群分布与完成概率遵循当前模型的分群结果，动画样本不等同于实际业务总人数。当前版本未连接后台推理或真实业务数据。</p><h3>保存与隐私</h3><p>设置与研究记录仅保存在当前浏览器，不上传服务器。下载的报告可独立保留；清除浏览器数据会移除本地研究记录。</p><h3>素材与字体</h3><p>像素地形采用 Kenney Tiny Town（CC0），人物与场景交互为原创绘制。中文界面使用霞鹜文楷屏幕版，英文与数字使用 Inter。字体与图标许可随网站代码保留。</p>';
 }
 function reportContent(){
  const r=result(),c=config(),p=r.selectedParams||state().params,scheme=r.selectedScheme||state().scheme;
@@ -250,7 +249,7 @@ function download(content,name,type){
  const href=URL.createObjectURL(new Blob([content],{type})),a=document.createElement("a");a.href=href;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(href),2000)
 }
 function exportHTML(){
- const title=ws.names[ws.active],css='body{font:14px/1.85 Georgia,"Microsoft YaHei",serif;color:#253b34;max-width:1000px;padding:40px;margin:auto;background:#fff}h1{font-size:30px;font-weight:500;margin:12px 0 28px}h2,h3{font-size:19px;margin-top:30px}header{border-bottom:1px solid #cbd3c1;padding-bottom:20px}small{color:#687663}.report-summary{font-size:21px;margin:25px 0}.report-condition{display:flex;gap:10px 22px;flex-wrap:wrap;color:#63725d;font:12px/1.8 "Microsoft YaHei",sans-serif}.stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:25px 0}.stat{background:#edf1e6;padding:15px;border-radius:6px}.stat small,.stat strong,.stat em{display:block}.stat strong{font-size:25px;font-weight:400}.stat em{font-size:11px;color:#6c7c61;font-style:normal}table{border-collapse:collapse;width:100%;font:12px/1.8 "Microsoft YaHei",sans-serif}th,td{padding:12px 8px;border-bottom:1px solid #d8dfcc;text-align:right}th:first-child,td:first-child{text-align:left}th{font-weight:400;color:#748267}.best{background:#edf2e4}p,li{color:#58694f;font-size:13px}.report-method{border-top:1px solid #d0d9c5;margin-top:30px;padding-top:18px;font-size:11px}.table-wrap{overflow:auto}@media(max-width:640px){body{padding:20px}.stat-grid{grid-template-columns:1fr 1fr}h1{font-size:25px}}@media print{body{padding:0}.stat, tr{break-inside:avoid}}';
+ const title=ws.names[ws.active],css='body{font:14px/1.85 "Segoe UI","Microsoft YaHei",sans-serif;color:#253b34;max-width:1000px;padding:40px;margin:auto;background:#fff}h1{font-size:30px;font-weight:500;margin:12px 0 28px}h2,h3{font-size:19px;margin-top:30px}header{border-bottom:1px solid #cbd3c1;padding-bottom:20px}small{color:#687663}.report-summary{font-size:21px;margin:25px 0}.report-condition{display:flex;gap:10px 22px;flex-wrap:wrap;color:#63725d;font:12px/1.8 "Microsoft YaHei",sans-serif}.stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:25px 0}.stat{background:#edf1e6;padding:15px;border-radius:6px}.stat small,.stat strong,.stat em{display:block}.stat strong{font-size:25px;font-weight:400}.stat em{font-size:11px;color:#6c7c61;font-style:normal}table{border-collapse:collapse;width:100%;font:12px/1.8 "Microsoft YaHei",sans-serif}th,td{padding:12px 8px;border-bottom:1px solid #d8dfcc;text-align:right}th:first-child,td:first-child{text-align:left}th{font-weight:400;color:#748267}.best{background:#edf2e4}p,li{color:#58694f;font-size:13px}.report-method{border-top:1px solid #d0d9c5;margin-top:30px;padding-top:18px;font-size:11px}.table-wrap{overflow:auto}@media(max-width:640px){body{padding:20px}.stat-grid{grid-template-columns:1fr 1fr}h1{font-size:25px}}@media print{body{padding:0}.stat, tr{break-inside:avoid}}';
  const page='<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+safeText(title)+' · 演策</title><style>'+css+'</style></head><body><header><small>演策 YANCE / 决策研究</small><h1>'+safeText(title)+'</h1></header>'+reportContent()+'</body></html>';
  download(page,"演策-"+title.replace(/[\\/:*?"<>|]/g,"-")+".html","text/html;charset=utf-8");notify("已下载 HTML 报告")
 }
@@ -285,9 +284,9 @@ function editParam(el){
 }
 document.addEventListener("input",e=>{
  const el=e.target;if(el.matches("[data-param][type=range]"))editParam(el);if(el.matches("[data-param][type=number]")&&el.value!==""&&el.validity.valid)editParam(el);
- if(el.matches("[data-weight]"))applyWeight(+el.dataset.weight,+el.value);
+ if(el.matches("[data-weight]"))applyWeight(+el.dataset.weight,+el.value);if(el.matches("[data-weight-number]")&&el.value!==""&&el.validity.valid)applyWeight(+el.dataset.weightNumber,+el.value);
 });
-document.addEventListener("change",e=>{if(e.target.matches("[data-param]:not([type=range])"))editParam(e.target)});
+document.addEventListener("change",e=>{const el=e.target;if(el.matches("[data-param]:not([type=range])"))editParam(el);if(el.matches("[data-weight-number]")){const v=Number(el.value);if(el.value!==""&&Number.isFinite(v))applyWeight(+el.dataset.weightNumber,Math.max(2,Math.min(94,Math.round(v))));else el.value=state().weights[+el.dataset.weightNumber]}});
 function showStrategyEditor(open){$("#strategy-editor").classList.toggle("is-collapsed",!open);$("#strategy-toggle").setAttribute("aria-expanded",String(open));$("#strategy-toggle").innerHTML=(open?"收起细节":"调整策略参数")+'<i data-lucide="'+(open?"chevron-up":"chevron-down")+'"></i>';icons()}
 function createCustom(){
  if(state().custom.enabled)rememberCustom();else delete customUndo[ws.active];const s=state();s.custom={enabled:true,name:{merchant:"我的促销策略",growth:"我的引导策略",public:"我的服务策略"}[ws.active],baseScheme:s.scheme==="member"?"member":"open",params:Object.fromEntries(config().controls.filter(c=>c.scheme).map(c=>[c.key,s.params[c.key]]))};s.scheme="custom";
@@ -308,7 +307,7 @@ $("#custom-name").addEventListener("input",e=>{state().custom.name=e.target.valu
 $("#custom-name").addEventListener("blur",()=>{$("#custom-name").value=state().custom.name});
 $("#custom-template").addEventListener("change",e=>{rememberCustom();state().custom.baseScheme=e.target.value;renderSettings();renderAll();$("#custom-template").focus()});
 
-function observeSelection(){flushRender();if(ui().progress>=1){ui().progress=0;scene?.setProgress(0)}setView("world");updateScene();$(".world-panel").scrollIntoView({behavior:reduceMotion()?"auto":"smooth",block:"start"});$("#play").focus({preventScroll:true});persistUI()}
+function observeSelection(){flushRender();if(ui().progress>=1){ui().progress=0;scene?.setProgress(0)}setView("world",{target:"scene"});updateScene();$("#play").focus({preventScroll:true});persistUI()}
 $("#preview-strategy").addEventListener("click",observeSelection);$("#observe-selection").addEventListener("click",observeSelection);
 $("#adopt-recommended").addEventListener("click",()=>{chooseStrategy(result().best.id,{editor:false,focus:false});$("#recommendation").focus({preventScroll:true})});
 function rememberCustom(){if(state().custom.enabled){customUndo[ws.active]=copy(state().custom);$("#undo-custom").disabled=false}}

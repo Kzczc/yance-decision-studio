@@ -75,6 +75,13 @@
     {x:240,y:304,w:112,rows:3,roof:'blue',index:4},
     {x:464,y:304,w:160,rows:3,roof:'blue',index:5}
   ];
+  // Interior lots vary by purpose. Street nodes and the primary entrance stay
+  // fixed, so district design cannot invalidate the tested pedestrian routes.
+  const DISTRICT_BUILDINGS = {
+    growth:[BUILDINGS[0],{x:250,y:76,w:80,rows:2,index:1},BUILDINGS[2],{x:480,y:328,w:128,rows:2,index:5}],
+    merchant:[BUILDINGS[0],{x:244,y:77,w:96,rows:2,roof:'red',index:1},BUILDINGS[2],BUILDINGS[4]],
+    public:[{x:80,y:76,w:96,rows:2,index:0},{x:250,y:64,w:96,rows:2,index:1},BUILDINGS[2],{x:258,y:298,w:80,rows:2,index:4},{x:490,y:326,w:112,rows:2,index:5}]
+  };
 
   class TownScene {
     constructor({canvas,onSelect,onTick,onCamera,environment='clear'}={}){
@@ -287,9 +294,9 @@
     }
     _prepareMap(){
       this._metrics.mapBuilds++;
-      this._mapLabels=[];this._mapPreparing=true;
+      this._mapLabels=[];this._mapLights=[];this._mapPreparing=true;
       const old=this.ctx;this.ctx=this.background.getContext('2d');this.ctx.imageSmoothingEnabled=false;
-      for(let y=0;y<H;y+=16)for(let x=0;x<W;x+=16){const r=rnd(x*2+y*7);this._tile(r>.91?2:r>.49?1:0,x,y);}
+      for(let y=0;y<H;y+=16)for(let x=0;x<W;x+=16){const r=rnd(x*2+y*7);this._tile(r>.94?1:0,x,y);}
       const module=this.options.module;
       // Every district shares the accessible pedestrian graph, but its materials,
       // silhouettes and public spaces belong to a different part of the city.
@@ -299,13 +306,14 @@
       // Pedestrian network. No agent crosses water except on the wooden bridge.
       for(const [a,b]of links){if(a===DOOR||b===DOOR)continue;const p=nodes[a],q=nodes[b];if((p.x<752&&q.x>704)||(q.x<752&&p.x>704))continue;const major=p.y===228&&q.y===228||p.x===384&&q.x===384;this._path(p.x,p.y,q.x,q.y,major?32:18);}
       this._path(544,160,544,192,24);
-      for(const [x,y,w,h]of[[58,143,142,30],[456,157,178,32],[52,387,150,22],[457,386,176,22]])this._court(x,y,w,h);
+      for(const [x,y,w,h]of[[58,143,142,30],[456,157,178,32],[457,386,176,22]])this._court(x,y,w,h);
       this._river();this._bridge();
       this._districtGround();
       this._flowerbed(475,283,44,12);this._flowerbed(535,282,52,12);
       this._flowerbed(248,167,72,13);this._flowerbed(82,45,81,10);
       this._flowerbed(745,301,45,12);this._flowerbed(637,365,26,18);
-      BUILDINGS.forEach(b=>this._building(b));
+      this._buildings=DISTRICT_BUILDINGS[module];this._buildings.forEach(b=>this._building(b));
+      this._districtLots();
       const trees=[[16,60,1],[10,120,1],[23,160,0],[21,320,1],[8,374,1],[61,21,0],[163,14,1],[296,12,0],[429,10,1],[635,14,0],[672,65,1],[654,123,0],[673,155,1],[667,310,1],[653,391,0],[764,30,1],[783,74,1],[755,114,0],[798,147,1],[758,283,1],[802,334,1],[762,374,0],[787,399,1],[18,432,0],[117,429,0],[305,429,0],[505,430,1],[613,430,0],[353,91,0],[351,334,0]];
       for(const tree of trees)this._tree(...tree);
       for(const [x,y]of[[260,250],[97,177],[593,254],[741,264],[338,174]])this._bench(x,y);
@@ -353,13 +361,11 @@
         this.rect(301,250,17,8,'#899E98');this.rect(303,246,13,6,'#CFD9D0');
         this.rect(306,231,7,17,'#688D95');this.rect(297,230,24,6,'#AACBC8');this.rect(307,223,7,7,'#DCE7D7');
         this._pergola(540,243,43,20);this._table(550,256);
-        this._table(82,172);this._table(168,174);this._bench(63,401);
-        this._bench(283,399);this._flowerbed(249,284,38,9);
+        this._table(82,172);this._table(168,174);this._flowerbed(249,284,38,9);
         this._sign(558,282,'开放交流区','#DCE9E6','#456672');
         for(let x=252;x<330;x+=21){this.rect(x,151,13,8,'#526E76');this.rect(x+2,152,9,4,'#C1D8D2');this.rect(x+5,159,3,3,'#6E857B');}
       }else if(module==='public'){
-        this._fountainBase(308,251);this._pergola(64,393,120,16);
-        this._fence(237,399,112);this._bench(249,282);this._bench(91,398);this._bench(148,398);
+        this._fountainBase(308,251);this._bench(249,282);
         this.rect(570,242,13,19,'#91A383');this.rect(568,239,17,4,'#697F68');this.rect(572,245,9,10,'#EFE3C3');
         for(let i=0;i<4;i++)this.rect(573+i*2,247,1,6,['#AC8970','#719E9E','#CDB474','#8DA16F'][i]);
         this._sign(558,282,'邻里共享花园','#E5ECD7','#506D58');
@@ -368,12 +374,89 @@
       }else{
         this._fountainBase(308,251);this._market(470,245);this._market(539,245);
         this._table(74,172);this._table(162,174);this._table(182,284);
-        this._fence(63,400,124);this._fence(237,399,112);this._fence(470,276,144);
+        this._fence(237,399,112);this._fence(470,276,144);
         this._sign(527,283,'河畔周末集市','#EFE0C0','#795F47');
         this._boat(728,118,'#C8A780');this._boat(720,349,'#849F99');
         // A string of square paper lanterns follows the market frontage.
         this.rect(472,239,116,1,'#7D8064');for(let x=478;x<590;x+=22){this.rect(x,240,1,4,'#8B8065');this.rect(x-3,244,7,6,'#E0BA7E');this.rect(x-2,245,5,3,'#F3D7A0');}
       }
+    }
+    _districtLots(){
+      // All furniture remains inside the lots bounded by the route network.
+      // Large open spaces give each district a different rhythm, rather than
+      // decorating six identical building footprints.
+      if(this.options.module==='growth'){
+        this.rect(56,291,141,114,'#B9CCBE');this.rect(59,294,135,108,'#DFE5D5');
+        this.rect(115,333,27,42,'#769DA3');this.rect(118,335,21,37,'#B6D2CD');
+        for(let y=339;y<371;y+=7)this.rect(118,y,21,1,'#E1EBDA');
+        this._glassPavilion(63,300,91,45);this._glassPavilion(120,356,72,36);
+        this.rect(66,357,36,32,'#9AB38F');this.rect(70,361,28,24,'#C8D4AE');
+        this._table(79,373);this._tree(168,301,0);this._sign(120,399,'协作玻璃院','#E7EFE5','#48656C');
+        this.rect(238,294,116,107,'#AABCAE');this.rect(241,297,110,101,'#DAE1D0');
+        for(const x of[247,282,317])this._collaborationBooth(x,303);
+        this.rect(249,344,94,2,'#A9BBB0');this.rect(249,383,94,2,'#A9BBB0');
+        for(let i=0;i<3;i++){
+          const x=249+i*33;this.rect(x,354,26,24,'#C5D3C4');this.rect(x+5,350,16,12,'#5B7E88');this.rect(x+7,352,12,7,'#B6D7D0');this.rect(x+11,362,3,6,'#718A82');this.rect(x+7,368,12,2,'#8BA394');
+        }
+        this._sign(296,395,'开放测试庭院','#E7EFE5','#48656C');
+      }else if(this.options.module==='public'){
+        this.rect(56,293,142,112,'#B5C69E');this.rect(59,296,136,106,'#D4DDC0');
+        this._accessibleLane(121,283,11,128);this._accessibleLane(60,341,133,10);
+        this._pergola(66,301,117,21);this._bench(76,323);this._bench(148,323);
+        this._tree(63,356,0);this._tree(165,359,0);
+        this.rect(87,367,24,15,'#9CAF91');this.rect(90,369,18,11,'#ABCDD0');this.rect(93,372,10,2,'#DAE6CB');
+        this.rect(141,362,15,29,'#AC9878');this.rect(144,365,9,23,'#E3DABD');
+        for(let y=368;y<385;y+=6)this.rect(145,y,7,3,'#89A49A');
+        this._bench(72,390);this._bench(150,390);this._sign(126,398,'树荫阅读花园','#EDF0DE','#526F5E');
+        this.rect(242,374,108,29,'#D9DFC7');this._accessibleLane(290,369,11,43);
+        this._bench(247,382);this._bench(317,382);this.rect(278,379,5,15,'#B6C39E');this.rect(306,379,5,15,'#B6C39E');
+        // Meeting steps face the community hall without filling the whole lot.
+        this.rect(252,146,91,7,'#CAD1B6');this.rect(258,153,79,6,'#DEE1C8');this.rect(264,159,67,5,'#B3C0A1');
+      }else{
+        this.rect(56,292,143,114,'#B4A087');this.rect(59,295,137,108,'#E1CEAA');
+        this.rect(119,296,16,105,'#EDE0BF');this.rect(60,341,135,11,'#EDE0BF');
+        for(const [x,y]of[[66,307],[143,307],[66,363],[143,363]])this._market(x,y);
+        // A clear cross-aisle and crate corners distinguish
+        // this open market from the enclosed shops elsewhere in the district.
+        this._crate(62,391);this._crate(184,391);
+        this._sign(126,399,'手作与花果市集','#FAF0DA','#795F47');
+        this._serviceDepot();
+      }
+    }
+    _glassPavilion(x,y,w,h){
+      this.rect(x+4,y+5,w,h,'#617D7430');this.rect(x,y,w,h,'#638B91');this.rect(x+3,y+3,w-6,h-12,'#AAD0CB');
+      for(let xx=x+11;xx<x+w-4;xx+=14)this.rect(xx,y+3,2,h-12,'#DFE8D8');
+      this.rect(x+3,y+Math.floor(h*.42),w-6,2,'#D8E5D8');this.rect(x+3,y+h-9,w-6,6,'#D9D8BD');
+      this.rect(x+w-21,y+h-16,13,14,'#47717B');this.rect(x+w-19,y+h-14,9,9,'#C1DBD3');
+      this.rect(x+5,y+5,3,h-20,'#E9F0DF');this.rect(x+5,y+h,15,3,'#BFCBB6');
+      this._mapLights.push([x+w-19,y+h-14,9,9]);
+    }
+    _collaborationBooth(x,y){
+      this.rect(x+2,y+4,27,30,'#748D7930');this.rect(x,y,27,27,'#85A395');this.rect(x+3,y+3,21,21,'#D7E2CB');
+      this.rect(x+4,y+16,19,4,'#AF9776');this.rect(x+9,y+9,10,8,'#60858D');this.rect(x+11,y+10,6,4,'#C0DAD3');
+      this.rect(x+9,y+22,10,5,'#74978B');this.rect(x+3,y+29,21,3,'#BFCDB7');
+      this._mapLights.push([x+11,y+10,6,4]);
+    }
+    _accessibleLane(x,y,w,h){
+      this.rect(x,y,w,h,'#EEEAD3');
+      if(w>h){this.rect(x,y+2,w,1,'#C4CBB4');this.rect(x,y+h-3,w,1,'#C4CBB4');}
+      else{this.rect(x+2,y,1,h,'#C4CBB4');this.rect(x+w-3,y,1,h,'#C4CBB4');}
+    }
+    _crate(x,y){this.rect(x,y,10,10,'#AC8961');this.rect(x+1,y+1,8,2,'#D4B88D');this.rect(x+1,y+6,8,2,'#D4B88D');this.rect(x+4,y+2,2,7,'#C6A57B');}
+    _serviceDepot(){
+      const x=483,y=310,w=131;
+      this.rect(x+5,y+5,w,66,'#62776530');this.rect(x,y,w,65,'#72877D');this.rect(x+3,y+3,w-6,32,'#A5B4A5');
+      for(let xx=x+10;xx<x+w-5;xx+=12)this.rect(xx,y+5,2,27,'#CAD2BB');
+      this.rect(x+2,y+36,w-4,27,'#DFD5B8');this.rect(x+7,y+42,36,21,'#A5AE9B');this.rect(x+51,y+42,36,21,'#A5AE9B');
+      for(let yy=y+45;yy<y+62;yy+=4){this.rect(x+9,yy,32,1,'#C9CFB6');this.rect(x+53,yy,32,1,'#C9CFB6');}
+      this.rect(x+100,y+41,20,22,'#5A7D7B');this.rect(x+103,y+43,14,10,'#B1CCC2');
+      this._mapLights.push([x+103,y+43,14,10]);
+      this.rect(x-7,y+65,w+14,25,'#C5BEA1');this.rect(x-4,y+67,w+8,2,'#ECE1BA');
+      this._crate(x+3,y+72);this._crate(x+17,y+72);this._crate(x+31,y+72);
+      // A parked cargo tricycle stays within its loading court.
+      this.rect(x+84,y+72,24,10,'#8DAB9A');this.rect(x+101,y+66,8,7,'#6F8E82');this.rect(x+107,y+65,5,2,'#59766D');
+      for(const xx of[x+87,x+103]){this.rect(xx,y+80,5,5,'#576B61');this.rect(xx+1,y+81,3,3,'#C6D1B6');}
+      this._sign(x+w/2,y+96,'配货与会员服务','#FAF0DA','#795F47');
     }
     _pergola(x,y,w,h){
       this.rect(x+3,y+3,3,h,'#849581');this.rect(x+w-6,y+3,3,h,'#849581');
@@ -388,7 +471,7 @@
           this.rect(x-w/2,y-2,w,4,'#92ACA9');this.rect(x-w/2+3,y-3,w-6,6,'#A8BDB5');this.rect(x-w/2+4,y-2,w-10,1,'#D7E2D2');
         }
       }else if(this.options.environment==='autumn'){
-        for(let i=0;i<72;i++){const x=47+Math.floor(rnd(i+247)*638),y=17+Math.floor(rnd(i+314)*421);if(BUILDINGS.some(b=>x>b.x-4&&x<b.x+b.w+4&&y>b.y-8&&y<b.y+b.rows*16+40))continue;this.rect(x,y,2+i%2,1,i%3===0?'#C17D52':i%3===1?'#DBB25F':'#BB9E5E');}
+        for(let i=0;i<45;i++){const x=47+Math.floor(rnd(i+247)*638),y=17+Math.floor(rnd(i+314)*421);if((y>289&&y<408&&x<362)||this._buildings.some(b=>x>b.x-4&&x<b.x+b.w+4&&y>b.y-8&&y<b.y+b.rows*16+40))continue;this.rect(x,y,2+i%2,1,i%3===0?'#C17D52':i%3===1?'#DBB25F':'#BB9E5E');}
       }
     }
     _path(x1,y1,x2,y2,width){
@@ -643,7 +726,7 @@
           const glow=c.createRadialGradient(x,y-19,1,x,y-19,28);glow.addColorStop(0,`rgba(255,224,155,${intensity*.26})`);glow.addColorStop(.45,`rgba(247,210,137,${intensity*.10})`);glow.addColorStop(1,'rgba(250,222,154,0)');c.fillStyle=glow;c.fillRect(x-28,y-47,56,56);
           this.rect(x-2,y-23,6,4,`rgba(255,233,166,${.35+intensity*.65})`);
         }
-        for(const b of BUILDINGS){
+        for(const b of this._buildings){
           const face=b.y+b.rows*16,light=`rgba(255,224,159,${intensity*.64})`;
           if(this.options.module==='growth'){
             for(let x=b.x+8;x<b.x+b.w-9;x+=14)for(let row=0;row<2;row++)if(rnd(x+row)>.22)this.rect(x,face+5+row*13,8,4,light);
@@ -653,6 +736,7 @@
             for(let column=0;column<b.w/16;column+=2){const x=b.x+column*16+5;if(column===Math.floor(b.w/32))continue;this.rect(x,face+21,5,6,light);}
           }
         }
+        for(const [x,y,w,h]of this._mapLights)this.rect(x,y,w,h,`rgba(255,224,159,${intensity*.57})`);
         // Main entrance remains easy to locate during the evening shift.
         if(this._isOpen()){const glow=c.createRadialGradient(544,166,2,544,166,27);glow.addColorStop(0,`rgba(255,224,154,${intensity*.23})`);glow.addColorStop(1,'rgba(255,224,154,0)');c.fillStyle=glow;c.fillRect(517,139,54,54);}
       }

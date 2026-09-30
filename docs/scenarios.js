@@ -26,7 +26,7 @@
       subtitle: "评估产品引导调整对激活与留存的影响。",
       decision: "首次使用流程应保留几步？哪些新用户需要人工引导？",
       worldTitle: "产品旅程街区", worldSubtitle: "跟踪用户从初次到访、完成关键操作到持续使用的旅程。",
-      audienceTitle: "按使用动机识别不同的引导需求。",
+      audienceTitle: "用户构成",
       audienceNote: "每位用户按本次进入产品时的主要状态归入一组。实际应用应以产品行为定义分组，并用业务数据校准各组占比。",
       strategyTitle: "新用户激活方案", compareTitle: "比较激活表现与后续留存。",
       schemes: [
@@ -71,7 +71,7 @@
       subtitle: "比较优惠策略对成交、实收与贡献毛利的影响。",
       decision: "新品首发应面向所有顾客提供优惠，还是定向回馈会员？",
       worldTitle: "社区商业街区", worldSubtitle: "跟踪到店、选购与结账过程，比较不同顾客对经营方案的反应。",
-      audienceTitle: "区分购买动机与会员活跃度。",
+      audienceTitle: "客群构成",
       audienceNote: "非会员按主要购买动机分组；会员按最近购买时间分组。四类客群互斥，比例为本次研究设定。",
       strategyTitle: "新品优惠方案", compareTitle: "同时比较订单、实收与贡献毛利。",
       schemes: [
@@ -113,7 +113,7 @@
       subtitle: "比较服务时段与网点安排对办理量、可达性和增量成本的影响。",
       decision: "增设晚间或周末窗口，还是开设社区流动服务点？",
       worldTitle: "社区服务网络", worldSubtitle: "沿着查询、到场与办理流程，比较不同服务资源配置。",
-      audienceTitle: "区分居民需求与服务可达性。",
+      audienceTitle: "居民构成",
       audienceNote: "居民按行动不便、其他老年居民、通勤上班族、其他常住居民依次归组，彼此互斥。分组仅用于测算服务可达性，不改变服务资格。",
       strategyTitle: "服务资源配置", compareTitle: "比较办理量、重点人群覆盖与预算使用。",
       schemes: [
