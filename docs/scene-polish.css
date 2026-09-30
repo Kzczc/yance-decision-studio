@@ -1,0 +1,60 @@
+
+/* Keep the result summary attached to the scene, independent of sidebar height. */
+.world-column{position:static!important;min-width:0;align-self:start}
+.quick-comparison{margin-top:22px;min-width:0}
+.quick-comparison>.section-heading{margin:0 0 13px}
+.quick-comparison .section-heading h3{font-size:calc(18px * var(--text-scale))}
+.quick-comparison .section-heading p{font-size:calc(11px * var(--text-scale));max-width:44em}
+.quick-comparison .scenario-card{padding:16px 15px}
+.quick-comparison .scenario-number{font-size:calc(24px * var(--text-scale));letter-spacing:-.5px}
+.quick-comparison .scenario-top{gap:8px;align-items:flex-start;flex-wrap:wrap}
+.quick-comparison .scenario-top h4{font-size:calc(12px * var(--text-scale));white-space:normal}
+.quick-comparison .scenario-bottom{flex-wrap:wrap;row-gap:7px}
+.quick-comparison .scenario-label{min-height:1.7em}
+.studio{align-items:start}
+.settings{position:static;max-height:none;overflow:visible}
+.settings>header{position:static;background:#f7fbfbee}
+.settings>footer{position:static;background:#f6fafb}
+html[data-scene-size=compact] .studio{grid-template-columns:minmax(0,1fr) 365px}
+html[data-scene-size=large] .studio{grid-template-columns:minmax(0,1fr)}
+html[data-scene-size=large] .settings{position:static;max-height:none;overflow:visible}
+html[data-scene-size=large] .settings-body{display:grid;grid-template-columns:1fr 1fr;gap:12px 22px}
+html[data-scene-size=large] .settings-body>.field-title:first-child{grid-column:1}
+html[data-scene-size=large] .scheme-options{grid-column:1;grid-row:2/5;margin:0;align-content:start}
+html[data-scene-size=large] #variant-controls{grid-column:2;grid-row:1/5}
+html[data-scene-size=large] .settings-body>.settings-divider{grid-column:1/-1;margin:4px -17px}
+html[data-scene-size=large] .advanced{margin:0}
+html[data-scene-size=large] .mix-summary{align-content:start}
+.world-canvas{height:auto!important;aspect-ratio:13/7;min-height:0;max-height:none}
+.world-panel:fullscreen .world-canvas,.world-panel.expanded .world-canvas{height:auto!important;aspect-ratio:auto;min-height:0}
+#town{image-rendering:auto!important}
+.scene-configuration{display:flex;gap:14px;justify-content:space-between;align-items:center;flex-wrap:wrap;padding:11px 14px;background:#f2f7f3;border-bottom:1px solid #c3d2c5;color:#6c8471;font-size:calc(10px * var(--text-scale))}
+.scene-scale{display:flex;gap:7px;align-items:center;white-space:nowrap}
+.scene-scale strong{font-size:calc(11px * var(--text-scale));font-weight:500;color:#4c6e59;font-variant-numeric:tabular-nums}
+.sample-controls{display:flex;align-items:center;gap:5px;white-space:nowrap}
+.sample-controls select,.light-control select{height:27px;max-width:130px;border:1px solid #c4d4c7;border-radius:4px;background:#fbfdf9;color:#63816b;font-size:calc(10px * var(--text-scale));padding:0 5px}
+.sample-controls input{width:44px;height:27px;font-size:calc(11px * var(--text-scale));padding:0 4px;text-align:center;border:1px solid #c4d4c7;border-radius:4px;background:#fbfdf9;color:#58765e;font-variant-numeric:tabular-nums}
+.sample-controls input:disabled{border-color:transparent;background:transparent;opacity:1;color:#75947b;-moz-appearance:textfield}
+.sample-controls input:disabled::-webkit-inner-spin-button{display:none}
+.light-control{display:flex;gap:4px;align-items:center}
+.light-control svg{width:13px;height:13px}
+.scene-clock{position:absolute;top:13px;right:13px;display:flex;align-items:center;gap:5px;z-index:2;background:#fbfff3e8;border:1px solid #a8b8a24d;border-radius:4px;color:#5b755b;font:calc(11px * var(--text-scale))/1.5 var(--body);padding:5px 8px;pointer-events:none;font-variant-numeric:tabular-nums}
+.scene-clock svg{width:13px;height:13px;color:#9b8755}
+.scene-clock[data-phase="夜间"]{background:#304353ec;color:#e2e7d7;border-color:#607989}
+.scene-clock[data-phase="夜间"] svg{color:#e2d9ad}
+.camera-controls{top:auto;bottom:43px;right:13px}
+.world-location{max-width:calc(100% - 170px)}
+.scene-hint{display:none}
+.scale-field{grid-column:1/-1}
+.shared-fields .scale-field .control-hint{display:none}
+[data-scene-phase=night] .sky-atmosphere{filter:saturate(.8) brightness(.9)}
+[data-scene-phase=evening] .sky-atmosphere{filter:sepia(.08) saturate(.88)}
+.sky-atmosphere{transition:filter 1s ease}
+.world-footer{gap:10px}
+#world-count-summary{font-variant-numeric:tabular-nums}
+@media(max-width:1200px){.studio,html[data-scene-size=compact] .studio{grid-template-columns:minmax(0,1fr) 296px}.scene-configuration{gap:8px;justify-content:flex-start}.scene-scale{flex-basis:100%;justify-content:space-between}.light-control{margin-left:auto}.quick-comparison .scenario-cards{display:block}.quick-comparison .scenario-card{display:grid;grid-template-columns:1fr 1fr;column-gap:10px;width:100%;border-right:0;border-bottom:1px solid #e1e9eb}.quick-comparison .scenario-card:last-child{border-bottom:0}.quick-comparison .scenario-tag{grid-column:1}.quick-comparison .scenario-top{grid-column:1}.quick-comparison .scenario-number{grid-column:2;grid-row:1/3;text-align:right;margin:0;font-size:calc(22px * var(--text-scale));align-self:center}.quick-comparison .scenario-label{grid-column:2;text-align:right}.quick-comparison .scenario-bottom{grid-column:1/-1}}
+@media(max-width:960px){.studio,html[data-scene-size=compact] .studio,html[data-scene-size=large] .studio{display:flex;flex-direction:column;gap:16px}.world-column{display:contents}.world-panel{order:0;width:100%}.observer{order:1;width:100%;margin-top:0}.settings{order:2;width:100%;position:static;max-height:none;overflow:visible}.quick-comparison{order:3;width:100%;margin-top:4px}.settings>header,.settings>footer{position:static}.quick-comparison .scenario-cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr))}.quick-comparison .scenario-card{display:block;border-right:1px solid #e1e9eb;border-bottom:0}.quick-comparison .scenario-card:last-child{border-right:0}.quick-comparison .scenario-number{margin-top:14px;text-align:left}.quick-comparison .scenario-label{text-align:left}.scene-configuration{gap:10px}.scene-scale{flex-basis:auto}.light-control{margin-left:auto}.settings-body{display:block!important}.camera-controls{bottom:40px}.scene-clock{top:10px;right:10px}.world-location{top:10px;left:10px}}
+@media(max-width:760px){.scene-configuration{padding:10px 12px;font-size:11px}.sample-controls select,.light-control select{font-size:12px;height:31px}.sample-controls input{font-size:13px;height:31px;width:48px}.scene-scale{flex-basis:100%;justify-content:space-between;font-size:11px}.scene-scale strong{font-size:12px}.light-control{margin-left:auto}.scene-clock{font-size:11px;padding:4px 6px}.world-footer>span:last-child{font-size:9px}.quick-comparison .scenario-cards{display:block}.quick-comparison .scenario-card{border:0;border-top:1px solid #d9e5e7;display:grid;grid-template-columns:1fr 1fr;padding:18px}.quick-comparison .scenario-card:first-child{border-top:0}.quick-comparison .scenario-top{grid-column:1}.quick-comparison .scenario-number{grid-column:2;grid-row:1/3;text-align:right;align-self:center;margin:0}.quick-comparison .scenario-label{grid-column:2;text-align:right}.quick-comparison .scenario-bottom{grid-column:1/-1}.quick-comparison .section-heading{margin-bottom:13px}.quick-comparison .section-heading h3{font-size:calc(18px * var(--text-scale))}}
+@media(max-width:430px){.scene-configuration{gap:7px;padding:9px 10px}.sample-controls{font-size:10px;gap:4px}.sample-controls select{max-width:107px;padding:0 3px;font-size:11px}.light-control select{max-width:105px;font-size:11px;padding:0 3px}.light-control svg{display:none}.sample-controls input{width:37px;font-size:12px}.scene-clock{font-size:10px;right:7px;top:7px}.world-location{font-size:10px;left:7px;top:7px;max-width:calc(100% - 145px)}.camera-controls{right:7px;bottom:32px;padding:2px}.camera-controls .icon-button{width:24px;height:24px}.camera-controls output{font-size:10px;min-width:35px}.world-legend{font-size:8px;padding:5px 4px;gap:4px;bottom:5px}.world-footer{flex-wrap:wrap}.scene-scale strong{font-size:calc(11px * var(--text-scale))}}
+@media print{.scene-configuration,.quick-comparison{display:none!important}.sky-atmosphere{filter:none}}
+
