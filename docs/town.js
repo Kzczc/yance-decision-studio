@@ -93,7 +93,7 @@
       this.onSelect=typeof onSelect==='function'?onSelect:()=>{};
       this.onTick=typeof onTick==='function'?onTick:()=>{};
       this.onCamera=typeof onCamera==='function'?onCamera:()=>{};
-      this.options={module:'merchant',segments:DEFAULT_SEGMENTS.map(s=>({...s})),scheme:'open',coupon:8,memberTarget:'all',coverage:1,memberShare:.4,weights:[35,25,25,15],duration:14,conversion:.18,count:32,groupRates:null,lighting:'auto',environment:'clear',resourceActive:true,guideSteps:2,supportAgents:4};
+      this.options={module:'merchant',segments:DEFAULT_SEGMENTS.map(s=>({...s})),scheme:'open',coupon:8,memberTarget:'all',coverage:1,memberShare:.4,weights:[35,25,25,15],duration:14,conversion:.18,count:32,groupRates:null,lighting:'auto',environment:'clear',context:'',layout:'street',facilities:'standard',flow:'steady',resourceActive:true,guideSteps:2,supportAgents:4};
       if(['clear','rain','autumn'].includes(environment))this.options.environment=environment;
       this._mapLabels=[];this._labels=[];
       this._progress=0;this._playing=!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
@@ -157,13 +157,14 @@
         groupRates:Array.isArray(o.groupRates)&&o.groupRates.length===4&&o.groupRates.every(n=>Number.isFinite(+n))?o.groupRates.map(n=>clamp(+n,0,1)):o.groupRates===null?null:old.groupRates,
         lighting:['auto','day','night'].includes(o.lighting)?o.lighting:old.lighting,
         environment:['clear','rain','autumn'].includes(o.environment)?o.environment:old.environment,
+        context:typeof o.context==='string'?o.context.slice(0,120):old.context||'',layout:['street','campus','square'].includes(o.layout)?o.layout:old.layout||'street',facilities:['standard','active','service'].includes(o.facilities)?o.facilities:old.facilities||'standard',flow:['steady','peak','spread'].includes(o.flow)?o.flow:old.flow||'steady',
         resourceActive:typeof o.resourceActive==='boolean'?o.resourceActive:old.resourceActive,
         guideSteps:o.guideSteps!=null&&Number.isFinite(+o.guideSteps)?clamp(Math.round(+o.guideSteps),1,5):old.guideSteps,
         supportAgents:o.supportAgents!=null&&Number.isFinite(+o.supportAgents)?clamp(Math.round(+o.supportAgents),0,50):old.supportAgents
       };
       const changed=JSON.stringify(old)!==JSON.stringify(this.options);
       const agentsChanged=old.module!==this.options.module||old.conversion!==this.options.conversion||old.count!==this.options.count||old.scheme!==this.options.scheme||old.duration!==this.options.duration||old.resourceActive!==this.options.resourceActive||(old.coverage>0)!==(this.options.coverage>0)||(old.supportAgents>0)!==(this.options.supportAgents>0)||JSON.stringify(old.groupRates)!==JSON.stringify(this.options.groupRates)||JSON.stringify(old.weights)!==JSON.stringify(weights)||JSON.stringify(old.segments)!==JSON.stringify(segments);
-      if(agentsChanged)this._makeAgents();if(old.module!==this.options.module||old.environment!==this.options.environment)this._prepareMap();
+      if(agentsChanged||old.flow!==this.options.flow)this._makeAgents();if(old.module!==this.options.module||old.environment!==this.options.environment||old.layout!==this.options.layout||old.facilities!==this.options.facilities)this._prepareMap();
       const progressChanged=o.progress!=null&&Number.isFinite(+o.progress)&&clamp(+o.progress,0,1)!==this._progress;
       if(progressChanged){this._progress=clamp(+o.progress,0,1);this._last=0;if(this._progress===1)this._playing=false;}
       if(changed||progressChanged){this._dirty=true;this._notify();this._schedule();}
@@ -235,8 +236,9 @@
         const opening=selfService?0:this.options.module==='merchant'?8:9,closing=selfService?24:this.options.module==='merchant'?22:extended||this.options.module==='growth'?21:18;
         // Work in absolute business hours first. Clamping normalized progress can
         // push late-period visits into the preceding night on long studies.
-        const windowStart=Math.max(8.1,day*24+(extended&&type===1?18:opening)),windowEnd=day*24+closing-.08;
-        const dwell=.45+rnd(i+803)*1.15,visitHour=windowStart+.12+rnd(i+401)*Math.max(0,windowEnd-windowStart-dwell-.24),completionHour=visitHour+dwell;
+        const peak=this.options.flow==='peak',spread=this.options.flow==='spread';
+        const windowStart=Math.max(8.1,day*24+(extended&&type===1?18:opening)+(peak?3:0)),windowEnd=day*24+closing-.08-(peak?2:0);
+        const dwell=.45+rnd(i+803)*1.15,visitHour=windowStart+.12+(spread?rnd(i+401)*Math.max(0,windowEnd-windowStart-dwell-.24):peak?rnd(i+401)*Math.max(.5,(windowEnd-windowStart-dwell-.24)*.28):rnd(i+401)*Math.max(0,windowEnd-windowStart-dwell-.24)),completionHour=visitHour+dwell;
         const span=this.options.duration*24-8,visitAt=(visitHour-8)/span,purchaseAt=(completionHour-8)/span,exposedAt=Math.max(0,(visitHour-8-(1+rnd(i+43)*2))/span);
         const groupRank=ranks[type].indexOf(i);
         return{id:i+1,name:NAMES[i%NAMES.length]+(i>=NAMES.length?' '+(Math.floor(i/NAMES.length)+1):''),segmentIndex:type,segment:this.options.segments[type].name,member:type>=2,coat:shade(this.options.segments[type].color,[0,-10,9][i%3]),skin:['#EDC69A','#CCA07C','#E1B28B','#B98D70'][i%4],hair:['#574D44','#8A6849','#434D4A','#6F5549'][i%4],phase:rnd(i+520),lane:((i*3)%7-3)*1.7,exposedAt,visitAt,purchaseAt,visits:groupRank<visits[type],buys:groupRank<purchases[type],destination,incoming,outgoing:route(destination,end),walk};
@@ -301,10 +303,12 @@
       // Every district shares the accessible pedestrian graph, but its materials,
       // silhouettes and public spaces belong to a different part of the city.
       this.rect(0,0,W,H,module==='growth'?'#D6E4DF66':module==='public'?'#DCE4CF42':'#F0E3BD25');
+      if(this.options.layout==='campus')this.rect(34,36,652,370,'#91B29B16');
+      if(this.options.layout==='square'){this._court(212,146,230,136);this.rect(222,156,210,116,'#F1E7CE70');}
       if(this.options.environment==='autumn')this.rect(0,0,W,H,'#E5CF9850');
       if(this.options.environment==='rain')this.rect(0,0,W,H,'#819AA62D');
       // Pedestrian network. No agent crosses water except on the wooden bridge.
-      for(const [a,b]of links){if(a===DOOR||b===DOOR)continue;const p=nodes[a],q=nodes[b];if((p.x<752&&q.x>704)||(q.x<752&&p.x>704))continue;const major=p.y===228&&q.y===228||p.x===384&&q.x===384;this._path(p.x,p.y,q.x,q.y,major?32:18);}
+      for(const [a,b]of links){if(a===DOOR||b===DOOR)continue;const p=nodes[a],q=nodes[b];if((p.x<752&&q.x>704)||(q.x<752&&p.x>704))continue;const major=p.y===228&&q.y===228||p.x===384&&q.x===384;this._path(p.x,p.y,q.x,q.y,(major?32:18)+(this.options.layout==='square'&&major?8:0));}
       this._path(544,160,544,192,24);
       for(const [x,y,w,h]of[[58,143,142,30],[456,157,178,32],[457,386,176,22]])this._court(x,y,w,h);
       this._river();this._bridge();
@@ -314,6 +318,7 @@
       this._flowerbed(745,301,45,12);this._flowerbed(637,365,26,18);
       this._buildings=DISTRICT_BUILDINGS[module];this._buildings.forEach(b=>this._building(b));
       this._districtLots();
+      if(this.options.facilities!=='standard')this._scenarioFacilities();
       const trees=[[16,60,1],[10,120,1],[23,160,0],[21,320,1],[8,374,1],[61,21,0],[163,14,1],[296,12,0],[429,10,1],[635,14,0],[672,65,1],[654,123,0],[673,155,1],[667,310,1],[653,391,0],[764,30,1],[783,74,1],[755,114,0],[798,147,1],[758,283,1],[802,334,1],[762,374,0],[787,399,1],[18,432,0],[117,429,0],[305,429,0],[505,430,1],[613,430,0],[353,91,0],[351,334,0]];
       for(const tree of trees)this._tree(...tree);
       for(const [x,y]of[[260,250],[97,177],[593,254],[741,264],[338,174]])this._bench(x,y);
@@ -325,6 +330,13 @@
       for(let i=0;i<18;i++){const y=17+i*23;this.rect(699+(i%2)*3,y,2,6,'#718C69');this.rect(703,y-2,2,8,'#ACC180');if(i%3===0){this.rect(739,y+6,6,2,'#7EA884');this.rect(741,y+4,3,5,'#88B48D');}}
       this._seasonGround();
       this._mapPreparing=false;this.ctx=old;this._dirty=true;
+    }
+    _scenarioFacilities(){
+      if(this.options.facilities==='active'){
+        this._bench(396,145);this._table(430,145);this._flowerbed(364,279,38,12);this._sign(421,131,'共享活动点','#E8EBDD','#526F68');
+      }else{
+        this._bench(394,146);this._accessibleLane(404,132,12,52);this._sign(425,122,'咨询与服务台','#E7EDE2','#526F68');
+      }
     }
     _districtGround(){
       const module=this.options.module;
