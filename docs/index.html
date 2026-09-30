@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#edf4f6">
+<meta name="description" content="演策 YANCE：面向企业增长、商户经营与公共服务的决策预演工作台。比较策略、观察人群、形成可验证的行动计划。">
+<meta property="og:title" content="演策 YANCE · 让选择先发生"><meta property="og:description" content="把不同的经营选择，放进一个可观察的世界。">
+<title>演策 YANCE — 让选择先发生</title>
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="assets/fonts.css"><link rel="stylesheet" href="styles.css">
+<script defer src="assets/lucide.min.js"></script><script defer src="scenarios.js"></script><script defer src="town.js"></script><script defer src="app.js"></script>
+</head>
+<body>
+<div class="sky-atmosphere" aria-hidden="true"><div class="cloud cloud-one"></div><div class="cloud cloud-two"></div><div class="cloud cloud-three"></div><div class="distant-ridge"></div></div>
+<header class="site-header">
+<a class="brand" href="./" aria-label="演策首页"><img src="assets/mark.svg" alt="" width="40" height="40"><span><b>演策 <em>YANCE</em></b><small>Decision intelligence</small></span></a>
+<nav aria-label="网站导航" class="site-nav"><a class="current" href="#workspace">决策工作台</a><button data-action="library">我的研究<span id="library-count">0</span></button><a href="brand.html">品牌故事</a></nav>
+<div class="header-actions"><button class="button quiet mobile-library" data-action="library" aria-label="我的研究"><i data-lucide="bookmark"></i></button><span class="local-status"><i></i>本地工作空间</span><button class="button quiet" data-action="method"><i data-lucide="circle-help"></i><span>方法说明</span></button></div>
+</header>
+<main class="site-main">
+<section class="intro">
+<div class="intro-copy"><div class="intro-label"><span class="fine-line"></span>让选择先发生</div><h1>重要的决定，<br class="mobile-break">值得提前看见。</h1><p>在真正投入之前，让不同方案在同一个世界里展开。<br class="desktop-break">理解人群的选择，也看清每一步的代价。</p></div>
+<div class="intro-note"><span class="note-serif">See the possibilities.<br>Choose with clarity.</span><span class="source-pill"><i data-lucide="layers-2"></i>行业情景样例<span class="source-dot"></span></span></div>
+</section>
+
+<section class="workspace" id="workspace" aria-label="决策工作台">
+<div class="module-navigation"><div class="module-tabs" id="module-tabs" role="tablist" aria-label="场景模块"></div><div class="study-actions"><button class="button" data-action="save"><i data-lucide="bookmark-plus"></i>保存研究</button><button class="button primary" data-action="report"><i data-lucide="file-chart-column"></i>决策报告</button></div></div>
+<div class="workspace-heading"><div><div class="module-caption" id="module-caption"></div><h2 id="study-title"></h2><p id="study-decision"></p></div><span class="period-stamp"><i data-lucide="calendar-days"></i><span id="period-label"></span></span></div>
+<nav class="view-tabs" aria-label="研究视图"><button class="active" data-view="world"><i data-lucide="map"></i>场景预演</button><button data-view="comparison"><i data-lucide="chart-no-axes-combined"></i>方案比较</button><button data-view="audience"><i data-lucide="users-round"></i>人群画像</button><span id="saved-status" class="saved-status" role="status">设置自动保存在此浏览器</span></nav>
+
+<section class="view active" id="view-world" aria-label="场景预演">
+<div class="studio">
+<div class="world-column">
+<section class="world-panel" aria-label="动态情景">
+<header class="world-heading"><div class="world-title"><span class="live-dot"></span><h3 id="world-title"></h3></div><span class="pixel-label">A living scenario</span></header>
+<div class="world-canvas"><canvas id="town" role="img" aria-label="像素街区情景。可以点击人物查看当前行为，也可从下方菜单选择人物。"></canvas><div class="world-location"><i data-lucide="map-pin"></i><span id="world-location"></span></div><div class="world-weather"><i data-lucide="sun"></i><span>晴间多云</span></div><div class="world-legend" id="world-legend"></div><div class="scene-hint">点击人物，观察选择</div></div>
+<div class="playback"><button class="icon-button play" id="play" aria-label="暂停预演" title="暂停预演"><i data-lucide="pause"></i></button><button class="icon-button" id="replay" aria-label="从头播放" title="从头播放"><i data-lucide="rotate-ccw"></i></button><div class="timeline"><div><span id="day-label">第 1 天</span><span id="day-total"></span></div><input type="range" id="timeline" min="0" max="1000" value="0" aria-label="时间进度"></div><div class="speed-group" aria-label="播放速度"><button class="active" data-speed="1" aria-pressed="true">1×</button><button data-speed="2" aria-pressed="false">2×</button><button data-speed="4" aria-pressed="false">4×</button></div><button class="icon-button fullscreen" id="fullscreen" aria-label="展开情景" title="展开情景"><i data-lucide="maximize-2"></i></button></div>
+<div class="world-footer"><span id="play-state">预演中</span><span>32 位人物呈现行为路径 · 经营指标按完整规模测算</span></div>
+</section>
+<section class="observer" aria-labelledby="observer-title"><div class="portrait" id="portrait"><span class="pixel-person" aria-hidden="true"></span></div><div class="observation"><div class="observation-meta"><h3 id="observer-title">从一个人的选择，看见一类人的反应。</h3><span id="observer-status">待观察</span></div><p id="observer-quote">点击街区中的人物，查看当前行为与情景反馈。</p></div><label class="sr-only" for="visitor-select">选择人群代表</label><select id="visitor-select"><option value="">选择人群代表</option></select></section>
+</div>
+<aside class="settings" aria-labelledby="settings-title"><header><h3 id="settings-title">策略设置</h3><button class="text-button" data-action="reset">重置</button></header><div class="settings-body"><div class="field-title">比较哪种方案</div><div class="scheme-options" id="scheme-options" role="radiogroup" aria-label="候选方案"></div><div id="variant-controls"></div><div class="settings-divider"></div><div class="field-title">共同条件</div><div id="main-controls" class="shared-fields"></div><label class="field"><span>评价优先级</span><select id="objective"></select></label><details class="advanced"><summary>更多设置<i data-lucide="chevron-down"></i></summary><div id="advanced-controls"></div></details><div class="settings-divider"></div><div class="field-title split">人群构成<button class="text-button" data-view="audience">调整<i data-lucide="arrow-up-right"></i></button></div><div class="mixbar" id="mini-mix" role="img" aria-label="人群比例"></div><div id="mix-summary" class="mix-summary"></div></div><footer><i data-lucide="check"></i><span id="settings-status">设置已应用</span></footer></aside>
+</div>
+<div class="section-heading"><div><h3>同一组条件，三种不同的可能。</h3><p>完整周期测算，方便在一致的口径下比较。</p></div><button class="text-button" data-view="comparison">完整方案比较<i data-lucide="arrow-up-right"></i></button></div>
+<div class="scenario-cards" id="scenario-cards"></div>
+</section>
+
+<section class="view" id="view-comparison" hidden aria-label="方案比较">
+<div class="comparison-lead"><div><span class="small-label">当前情景下的判断</span><h3 id="recommendation"></h3><p id="recommendation-detail"></p></div><span id="recommendation-tag" class="recommendation-tag"></span></div><div class="stat-grid" id="stats"></div>
+<div class="analysis-grid"><article class="analysis-panel"><div class="panel-title"><h3 id="chart-title"></h3><span id="chart-unit"></span></div><div id="result-chart"></div><p class="caption">在相同周期和人群结构下比较；结果随假设条件变化。</p></article><article class="analysis-panel"><div class="panel-title"><h3>值得关注的取舍</h3></div><div id="insights"></div></article></div>
+<article class="analysis-panel comparison-table"><div class="panel-title"><h3>完整指标对照</h3><span id="comparison-population"></span></div><div class="table-wrap"><table><thead id="table-head"></thead><tbody id="table-body"></tbody></table></div></article>
+<section class="validation"><div><span class="small-label">从预演到行动</span><h3>让下一步验证，<br>有清楚的起点。</h3></div><ol id="validation-steps"></ol></section>
+</section>
+
+<section class="view" id="view-audience" hidden aria-label="人群画像">
+<div class="section-heading"><div><h3 id="audience-title"></h3><p>以行为动机和实际约束分层，让人群差异进入决策。</p></div><span class="quiet-badge">可调人群结构</span></div>
+<div class="audience-toolbar"><span>当前结构</span><button class="button small" id="reset-audience"><i data-lucide="rotate-ccw"></i>恢复场景默认</button><span class="caption">调整一类占比，其余自动分配，合计 100%。</span></div>
+<div class="audience-cards" id="audience-cards"></div><div class="audience-summary"><div><h4>构成一览</h4><div class="mixbar large" id="full-mix"></div><div id="full-mix-legend" class="mix-summary"></div></div><div><h4>如何定义这些人群</h4><p id="audience-definition"></p></div></div>
+</section>
+<div class="workspace-foot"><button class="text-button" data-action="method"><i data-lucide="book-open"></i>数据来源与测算方法</button><span>行业样例 / 可复现的情景研究</span><button class="text-button" data-action="report">整理为决策报告<i data-lucide="arrow-up-right"></i></button></div>
+</section>
+<section class="closing"><div class="closing-title">选择有很多种。<br><span>看见，才能从容向前。</span></div><div class="closing-detail"><p>演策服务于企业增长、商户经营与公共服务。<br>将复杂的人群反应，转化为可讨论、可比较的决策依据。</p><a href="brand.html">认识演策<i data-lucide="arrow-up-right"></i></a></div></section>
+</main>
+<footer class="site-footer"><a class="footer-brand" href="./">演策 YANCE</a><span>Decision intelligence, thoughtfully designed.</span><div><button data-action="method">方法与边界</button><a href="brand.html">品牌资产</a></div></footer>
+
+<dialog id="report-dialog" aria-labelledby="report-title"><header class="dialog-header"><div><span class="small-label">Yance research</span><h2 id="report-title">决策研究报告</h2></div><button class="icon-button" data-close aria-label="关闭报告"><i data-lucide="x"></i></button></header><div class="dialog-body"><label class="field"><span>研究标题</span><input id="report-name" maxlength="100"></label><div id="report-body"></div></div><footer class="dialog-actions"><button class="button" id="csv-export"><i data-lucide="table-2"></i>导出 CSV</button><button class="button" id="report-print"><i data-lucide="printer"></i>打印</button><button class="button primary" id="html-export"><i data-lucide="download"></i>下载报告</button></footer></dialog>
+<dialog id="method-dialog" aria-labelledby="method-title"><header class="dialog-header"><div><span class="small-label">Research methods</span><h2 id="method-title">数据来源与测算方法</h2></div><button class="icon-button" data-close aria-label="关闭说明"><i data-lucide="x"></i></button></header><div class="dialog-body" id="method-body"></div></dialog>
+<dialog id="save-dialog" aria-labelledby="save-title"><header class="dialog-header"><div><span class="small-label">Save your research</span><h2 id="save-title">保留这次研究的起点。</h2></div><button class="icon-button" data-close aria-label="关闭保存窗口"><i data-lucide="x"></i></button></header><form id="save-form"><div class="dialog-body"><label class="field"><span>研究名称</span><input id="study-name" maxlength="80" required></label><p class="caption">方案、参数与人群构成将保存在此浏览器，可从「我的研究」继续。</p></div><footer class="dialog-actions"><button type="button" class="button" data-close>取消</button><button class="button primary" type="submit">保存研究</button></footer></form></dialog>
+<dialog id="library-dialog" aria-labelledby="library-title"><header class="dialog-header"><div><span class="small-label">Your research</span><h2 id="library-title">我的研究</h2></div><button class="icon-button" data-close aria-label="关闭研究列表"><i data-lucide="x"></i></button></header><div class="dialog-body" id="library-body"></div></dialog>
+<div class="toast" id="toast" role="status" aria-live="polite"></div><noscript>请启用 JavaScript 以使用情景预演。您仍可查看<a href="brand.html">品牌介绍</a>。</noscript>
+</body></html>
