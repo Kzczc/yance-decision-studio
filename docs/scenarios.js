@@ -22,131 +22,131 @@
 
   var modules = [
     {
-      id: "growth", title: "企业增长", english: "Product growth", icon: "chart-no-axes-combined", order: 1,
-      subtitle: "让每一次产品改动，都更接近持续增长。",
-      decision: "缩短注册引导，还是增加人工陪伴，才能留住更多新用户？",
-      worldTitle: "产品体验街区", worldSubtitle: "从发现、体验到持续使用，观察不同用户的选择。",
-      audienceTitle: "理解动机，设计更合适的产品路径。",
-      audienceNote: "按用户本次进入产品的主要状态分组；同一用户只计入一类。真实应用需由行为数据定义分组。",
-      strategyTitle: "新用户激活路径", compareTitle: "从完成激活，到留下来。",
+      id: "growth", title: "企业增长", english: "Product adoption", icon: "chart-no-axes-combined", order: 1,
+      subtitle: "评估产品引导调整对激活与留存的影响。",
+      decision: "首次使用流程应保留几步？哪些新用户需要人工引导？",
+      worldTitle: "产品旅程街区", worldSubtitle: "跟踪用户从初次到访、完成关键操作到持续使用的旅程。",
+      audienceTitle: "按使用动机识别不同的引导需求。",
+      audienceNote: "每位用户按本次进入产品时的主要状态归入一组。实际应用应以产品行为定义分组，并用业务数据校准各组占比。",
+      strategyTitle: "新用户激活方案", compareTitle: "比较激活表现与后续留存。",
       schemes: [
-        { id: "baseline", name: "现有注册引导", short: "现状", desc: "保留五步引导与现有自助流程，作为比较基线。", tag: "对照" },
-        { id: "open", name: "轻量自助引导", short: "轻量引导", desc: "减少首次使用步骤，让用户更快触达核心价值。", tag: "方案 A" },
-        { id: "member", name: "顾问陪伴激活", short: "顾问陪伴", desc: "为部分新用户提供一对一引导，受服务席位与预算约束。", tag: "方案 B" }
+        { id: "baseline", name: "现行五步引导", short: "现行流程", desc: "保留五步自助引导，作为比较基线。", tag: "对照" },
+        { id: "open", name: "精简自助引导", short: "精简引导", desc: "缩短首次使用流程，帮助用户更快完成核心操作。", tag: "方案 A" },
+        { id: "member", name: "人工引导支持", short: "人工引导", desc: "为部分新用户安排一对一支持；覆盖人数受顾问席位与预算限制。", tag: "方案 B" }
       ],
       controls: [
-        control("stepsA", "首次引导步骤", "range", 1, 5, 1, "步", "open", "现状为 5 步。更短的路径降低阻力，也可能减少对产品的理解。"),
-        control("assistedReach", "计划陪伴比例", "range", 0, 100, 5, "%", "member", "实际覆盖同时受顾问接待能力和预算限制。"),
-        control("supportAgents", "可用顾问席位", "number", 1, 50, 1, "席", "member", "每席每天最多服务 40 人；按实际安排的服务人次计算费用。"),
-        control("daily", "每日新进入用户", "number", 50, 50000, 50, "人 / 天", "shared", "三组使用相同规模、相同结构的进入用户。"),
-        control("days", "用户进入窗口", "select", 7, 30, 1, "天", "shared", "7 日留存从各用户激活后计算，完整观测须再等待 7 天。", periodOptions),
-        control("budget", "单方案服务预算", "number", 0, 1000000, 500, "元", "shared", "A 的自助服务为 0.35 元 / 覆盖用户；B 的顾问服务为 8 元 / 人次。")
+        control("stepsA", "引导步骤数", "range", 1, 5, 1, "步", "open", "现行流程为 5 步。缩短流程可能降低使用阻力，也可能减少必要说明。"),
+        control("assistedReach", "计划人工覆盖比例", "range", 0, 100, 5, "%", "member", "实际覆盖还受每日接待能力与服务预算限制。"),
+        control("supportAgents", "每日顾问席位", "number", 1, 50, 1, "席", "member", "每席每天最多接待 40 人；每名覆盖用户按 8 元计入增量服务费。"),
+        control("daily", "每日新增用户", "number", 50, 50000, 50, "人 / 天", "shared", "各方案使用相同的新用户规模与客群构成。"),
+        control("days", "用户进入周期", "select", 7, 30, 1, "天", "shared", "7 日留存在用户激活后计时；完整验证还需等待最后一位用户满 7 天。", periodOptions),
+        control("budget", "单方案增量服务预算", "number", 0, 1000000, 500, "元", "shared", "各方案分别受预算约束。自助引导按覆盖用户计 0.35 元，人工支持按覆盖用户计 8 元。")
       ],
       segments4: [
-        segment("explore", "首次探索者", "先看看是否适合", "尚未确定使用目标，更容易因步骤冗长离开。", 0.12, 0, "先让我体验一下，再决定是否继续。"),
-        segment("intent", "明确需求者", "带着具体任务而来", "目标清楚，期待快速完成第一次核心操作。", 0.30, 1, "我希望直接解决眼前这个问题。"),
-        segment("migrate", "熟练迁移者", "已有同类工具经验", "熟悉工作方式，更看重迁移效率与能力匹配。", 0.52, 2, "把已有工作迁过来，会不会很麻烦？"),
-        segment("return", "回访未激活者", "需要一个继续的理由", "曾经访问但尚未完成核心动作，需要消除具体阻碍。", 0.38, 3, "上次卡住的地方，这次有人帮我吗？")
+        segment("explore", "首次探索者", "先判断是否适合", "尚未形成明确使用目标；首次体验的步骤与信息量会影响其是否继续。", 0.12, 0, "我想先试用一下，再决定要不要继续。"),
+        segment("intent", "明确需求用户", "带着具体任务而来", "目标明确，关注能否快速完成首次核心操作。", 0.30, 1, "我想尽快把这件事办完。"),
+        segment("migrate", "同类产品迁移者", "已有相关工具经验", "熟悉同类产品，更关注数据迁移效率与功能匹配。", 0.52, 2, "把现有工作迁过来，需要多少时间？"),
+        segment("return", "再次到访未激活者", "此前尚未完成关键操作", "曾到访但未完成核心操作；明确并解决具体阻碍有助于继续使用。", 0.38, 3, "上次没完成的操作，这次能顺利做完吗？")
       ],
-      objectives: [{ value: "retained", label: "提高 7 日留存人数" }, { value: "activated", label: "提高完成激活人数" }],
+      objectives: [{ value: "retained", label: "增加 7 日留存用户" }, { value: "activated", label: "增加激活用户" }],
       metrics: [
-        metric("activated", "完成激活", "人", "integer"),
-        metric("rate", "激活转化率", "%", "percent"),
-        metric("retained", "7 日留存人数", "人", "integer"),
-        metric("unitCost", "每激活服务成本", "元 / 人", "currency", "min", "本方案增量服务费用 ÷ 全部激活人数；不含获客与既有平台成本。")
+        metric("activated", "激活用户", "人", "integer", "max", "完成预先定义核心操作的新用户数；试验前应固定激活事件口径。"),
+        metric("rate", "激活率", "%", "percent", "max", "激活用户数 ÷ 进入产品的新用户数。"),
+        metric("retained", "7 日留存用户", "人", "integer", "max", "按预先定义的留存事件，统计激活后第 7 日仍在使用的用户。"),
+        metric("unitCost", "每位激活用户服务成本", "元 / 人", "currency", "min", "本方案增量服务费用 ÷ 全部激活用户数；不含获客与既有平台成本。")
       ],
-      tableMetrics: [metric("activated", "激活人数", "人", "integer"), metric("rate", "激活率", "%", "percent"), metric("retained", "7 日留存", "人", "integer"), metric("retention", "激活后留存率", "%", "percent"), metric("cost", "服务费用", "元", "currency", "min")],
+      tableMetrics: [metric("activated", "激活用户", "人", "integer"), metric("rate", "激活率", "%", "percent"), metric("retained", "7 日留存用户", "人", "integer"), metric("retention", "激活后 7 日留存率", "%", "percent", "max", "7 日留存用户数 ÷ 激活用户数。"), metric("cost", "增量服务费", "元", "currency", "min", "本方案新增自助引导或人工支持的服务费用。")],
       defaultState: { scheme: "open", objective: "retained", weights: [35, 30, 20, 15], params: { stepsA: 2, assistedReach: 40, supportAgents: 4, daily: 1000, days: 14, budget: 30000 } },
       assumptions: [
-        "各客群激活基线为 12%、30%、52%、38%；激活后的 7 日留存基线为 28%、56%、68%、50%。均为可供讨论的情景假设。",
-        "自助步骤由 5 步缩短至 1 步时，四类客群的激活率分别最多增加 15、14、7、11 个百分点；激活后留存率分别减少 8、3、1、2 个百分点。",
-        "顾问完整覆盖时，四类客群的激活率分别增加 12、22、16、24 个百分点，激活后留存率分别增加 8、10、6、8 个百分点。",
-        "顾问覆盖人数不超过计划比例、每席每日 40 人的能力与预算可承担人数三者中的最小值。自助引导按覆盖用户计费；预算不足时仅部分用户进入新路径。",
-        "费用只含本方案增量服务费用。未计广告获客、开发投入、既有平台、固定人员与其他运营成本；不把每激活服务成本称为完整获客成本。"
+        "四类客群的激活基线依次为 12%、30%、52%、38%；激活后 7 日留存基线依次为 28%、56%、68%、50%。均为情景假设，需用业务数据校准。",
+        "引导由 5 步缩短至 1 步时，四类客群的激活率最高分别增加 15、14、7、11 个百分点；激活后留存率分别减少 8、3、1、2 个百分点。",
+        "人工引导覆盖时，四类客群的激活率分别增加 12、22、16、24 个百分点；激活后留存率分别增加 8、10、6、8 个百分点。",
+        "人工引导覆盖人数取计划人数、顾问席位可接待人数与预算可承担人数中的最小值。自助引导按覆盖用户计费；预算不足时按比例缩减覆盖。",
+        "仅计方案新增服务费用；不含广告获客、产品开发、既有平台、固定人员及其他运营成本。每位激活用户服务成本不等同于完整获客成本。"
       ],
-      validation: ["以用户为单位随机分流，固定新用户资格与激活事件。", "同时监测激活率、激活后 7 日留存、支持工时与投诉。", "按各组最后一名用户的激活日期补足 7 日观察窗口，再比较结果。"]
+      validation: ["按用户随机分组；预先固定新用户资格、分流比例与激活事件。", "同步记录激活率、激活后 7 日留存、人工支持工时与投诉。", "待各组最后一位用户满 7 日观察期后，再比较留存结果。"]
     },
     {
-      id: "merchant", title: "商户经营", english: "Merchant operations", icon: "store", order: 2,
-      subtitle: "把经营直觉，变成有依据的下一步。",
-      decision: "新品首发，选择全员礼遇还是会员专享，才能兼顾成交与毛利？",
-      worldTitle: "南岸生活街区", worldSubtitle: "一间新店、四类顾客，以及一次值得推敲的经营决策。",
-      audienceTitle: "看清来到门店的人，再决定怎样邀请。",
-      audienceNote: "会员按最近购买时间分为活跃与沉睡；非会员新客再按主要购买动机分为优惠与品质导向。四类互斥。",
-      strategyTitle: "新品上市礼遇", compareTitle: "成交之外，看见每一笔毛利。",
+      id: "merchant", title: "商户经营", english: "Local commerce", icon: "store", order: 2,
+      subtitle: "比较优惠策略对成交、实收与贡献毛利的影响。",
+      decision: "新品首发应面向所有顾客提供优惠，还是定向回馈会员？",
+      worldTitle: "社区商业街区", worldSubtitle: "跟踪到店、选购与结账过程，比较不同顾客对经营方案的反应。",
+      audienceTitle: "区分购买动机与会员活跃度。",
+      audienceNote: "非会员按主要购买动机分组；会员按最近购买时间分组。四类客群互斥，比例为本次研究设定。",
+      strategyTitle: "新品优惠方案", compareTitle: "同时比较订单、实收与贡献毛利。",
       schemes: [
-        { id: "baseline", name: "原价上市", short: "原价上市", desc: "保留自然购买需求，不额外提供优惠。", tag: "对照" },
-        { id: "open", name: "全员尝新礼遇", short: "全员礼遇", desc: "对全部客群开放首单礼遇，扩大新品尝试。", tag: "方案 A" },
-        { id: "member", name: "会员专属礼遇", short: "会员专享", desc: "将预算集中于选定会员，观察复购与唤回。", tag: "方案 B" }
+        { id: "baseline", name: "新品原价销售", short: "原价销售", desc: "不额外提供优惠，作为自然购买基线。", tag: "对照" },
+        { id: "open", name: "全客群优惠", short: "通用优惠", desc: "对所有触达顾客提供单笔优惠，比较成交增量与优惠成本。", tag: "方案 A" },
+        { id: "member", name: "会员定向优惠", short: "会员定向", desc: "仅向设定范围的会员提供单笔优惠，比较成交与毛利表现。", tag: "方案 B" }
       ],
       controls: [
-        control("couponA", "全员每单礼遇", "range", 0, 40, 1, "元", "open", "每位顾客至多一单；礼遇不会超过商品售价。"),
-        control("couponB", "会员每单礼遇", "range", 0, 40, 1, "元", "member", "只对选定会员群体开放，和全员方案独立调整。"),
-        control("memberTarget", "会员礼遇对象", "select", null, null, null, "", "member", "会员分类以最近一次购买时间划分。", [{ value: "all", label: "全部会员" }, { value: "active", label: "活跃会员" }, { value: "dormant", label: "沉睡会员" }]),
-        control("price", "商品售价", "number", 1, 9999, 1, "元 / 件", "shared", "三种方案使用同一商品售价。"),
-        control("cost", "单件变动成本", "number", 0, 9999, 1, "元 / 件", "shared", "可包含采购、包装和履约；不含固定租金。"),
-        control("daily", "每日触达顾客", "number", 20, 50000, 10, "人 / 天", "shared", "窗口内按独立顾客计数，每人至多购买一件。"),
-        control("days", "活动周期", "select", 7, 30, 1, "天", "shared", "三组使用相同活动窗口。", periodOptions),
-        control("budget", "单方案礼遇预算", "number", 0, 1000000, 500, "元", "shared", "仅核销的礼遇计入费用；余额不会被计为成本。")
+        control("couponA", "每位顾客优惠", "range", 0, 40, 1, "元", "open", "每位顾客最多计一笔订单；优惠额不高于商品售价。"),
+        control("couponB", "每位会员优惠", "range", 0, 40, 1, "元", "member", "仅对所选会员范围生效；与通用优惠分别设置。"),
+        control("memberTarget", "适用会员范围", "select", null, null, null, "", "member", "按最近一次购买时间划分会员状态。", [{ value: "all", label: "全部会员" }, { value: "active", label: "近 30 天有购买" }, { value: "dormant", label: "31–180 天未购买" }]),
+        control("price", "商品售价", "number", 1, 9999, 1, "元 / 件", "shared", "所有方案采用相同售价。"),
+        control("cost", "单件变动成本", "number", 0, 9999, 1, "元 / 件", "shared", "可计入采购、包装与履约成本；不含租金等固定成本。"),
+        control("daily", "每日触达顾客数", "number", 20, 50000, 10, "人 / 天", "shared", "按触达顾客计数；每位顾客最多购买一件。"),
+        control("days", "活动周期", "select", 7, 30, 1, "天", "shared", "各方案使用相同的活动起止周期。", periodOptions),
+        control("budget", "单方案优惠预算", "number", 0, 1000000, 500, "元", "shared", "仅实际核销金额计入费用；未使用余额不作为成本。")
       ],
       segments4: [
-        segment("value", "优惠导向新客", "价格清楚，才愿尝试", "尚非会员，对实付价格敏感，希望礼遇简单直接。", 0.045, 0, "价格合适、优惠直接可用，我会愿意试试。"),
-        segment("quality", "品质导向新客", "先理解产品的价值", "尚非会员，更关注品质、服务与新品体验。", 0.065, 1, "先了解产品，再决定是否值得购买。"),
-        segment("active", "活跃会员", "熟悉品牌，常来常往", "近 30 天有购买记录，重视稳定体验与会员权益。", 0.105, 2, "我会留意新品，专属礼遇会增加吸引力。"),
-        segment("dormant", "沉睡会员", "需要一个回来的理由", "31–180 天未购买，对重新尝试持观望态度。", 0.035, 3, "一个清楚的回归理由，会让我再来看看。")
+        segment("value", "价格敏感新客", "关注实付价格", "尚未成为会员；对价格变化较敏感，倾向先比较优惠条件。", 0.045, 0, "优惠规则清楚、价格合适，我会考虑试试。"),
+        segment("quality", "品质导向新客", "关注产品与体验", "尚未成为会员；更重视产品品质、服务与新品体验。", 0.065, 1, "我想先了解产品，再判断是否适合自己。"),
+        segment("active", "活跃会员", "近 30 天有购买", "近 30 天有购买记录；已熟悉品牌，关注产品体验与会员权益。", 0.105, 2, "如果确实适合我，我会关注这次新品。"),
+        segment("dormant", "待唤回会员", "31–180 天未购买", "31–180 天未购买；是否回访可能受产品相关性与优惠条件影响。", 0.035, 3, "如果有合适的新品或优惠，我会再看看。")
       ],
-      objectives: [{ value: "margin", label: "提高活动贡献毛利" }, { value: "orders", label: "提高成交订单数" }],
-      metrics: [metric("rate", "购买转化率", "%", "percent"), metric("revenue", "实收销售额", "元", "currency"), metric("margin", "活动贡献毛利", "元", "currency"), metric("subsidy", "已用礼遇预算", "元", "currency", "min")],
-      tableMetrics: [metric("orders", "成交订单", "单", "integer"), metric("rate", "转化率", "%", "percent"), metric("revenue", "实收", "元", "currency"), metric("margin", "贡献毛利", "元", "currency"), metric("subsidy", "礼遇费用", "元", "currency", "min")],
+      objectives: [{ value: "margin", label: "提高活动贡献毛利" }, { value: "orders", label: "增加成交订单" }],
+      metrics: [metric("rate", "购买转化率", "%", "percent", "max", "成交订单数 ÷ 触达顾客数。"), metric("revenue", "实收销售额", "元", "currency", "max", "商品售价收入扣除已核销优惠后的金额。"), metric("margin", "活动贡献毛利", "元", "currency", "max", "实收销售额扣除商品变动成本；不等同于净利润。"), metric("subsidy", "优惠核销额", "元", "currency", "min", "已实际核销的优惠金额；预算余额不计入费用。")],
+      tableMetrics: [metric("orders", "成交订单", "单", "integer", "max", "按每位触达顾客最多一笔订单计算。"), metric("rate", "购买转化率", "%", "percent"), metric("revenue", "实收销售额", "元", "currency"), metric("margin", "贡献毛利", "元", "currency"), metric("subsidy", "优惠核销额", "元", "currency", "min")],
       defaultState: { scheme: "open", objective: "margin", weights: [35, 25, 25, 15], params: { couponA: 8, couponB: 15, memberTarget: "all", price: 59, cost: 24, daily: 715, days: 14, budget: 8000 } },
       assumptions: [
-        "四类客群的原价转化率分别为 4.5%、6.5%、10.5%、3.5%。价格响应为预设的情景参数，需用真实经营数据校准。",
-        "礼遇影响按折扣占售价的比例计算，并设置边际递减；获券顾客的购买概率最高为 60%。每人至多购买一件。",
-        "预算不足时按同一比例减少符合资格人群的发券覆盖；未获券人群保持原价购买概率。实际核销费用不会超过预算。",
-        "实收 = 售价 × 订单 − 已核销礼遇；贡献毛利 = 实收 − 单件变动成本 × 订单。礼遇只扣减一次，未花费预算不扣减。",
-        "贡献毛利不等于净利润；此处未计租金、获客、税费、退货与长期复购，不输出统计置信区间。"
+        "四类客群的原价购买转化基线依次为 4.5%、6.5%、10.5%、3.5%。优惠响应系数为情景参数，实际应用需用经营数据校准。",
+        "模型按优惠额占售价的比例调整购买响应，并设置边际递减；购买转化率上限为 60%。每位顾客最多计一笔订单。",
+        "预算不足时，按比例缩减符合条件的顾客覆盖；未获得优惠的顾客按原价购买响应计算。实际优惠核销额不超过预算。",
+        "实收销售额 = 售价 × 订单数 − 优惠核销额；贡献毛利 = 实收销售额 − 单件变动成本 × 订单数。优惠仅扣减一次，预算余额不计为成本。",
+        "贡献毛利不等于净利润。测算未计租金、获客、税费、退货及后续复购，也不提供统计置信区间。"
       ],
-      validation: ["预先固定会员定义、发券资格、预算耗尽规则与活动窗口。", "以每名触达顾客的贡献毛利为主指标，同时观察订单与退款。", "三组同时随机分流，结合历史波动计算样本量后再作经营决策。"]
+      validation: ["预先固定会员口径、优惠资格、预算耗尽规则与活动周期。", "以每位触达顾客的贡献毛利为主指标，并同步记录订单、退款与优惠核销。", "三组同期随机分流；结合历史波动计算样本量后再评估经营效果。"]
     },
     {
-      id: "public", title: "公共服务", english: "Service planning", icon: "landmark", order: 3,
-      subtitle: "让有限的服务资源，回应更多真实需要。",
-      decision: "延长服务时间，还是增设流动服务点，能够更好地缓解办理压力？",
-      worldTitle: "邻里服务街区", worldSubtitle: "围绕服务时间、办理能力与出行便利，比较不同资源安排。",
-      audienceTitle: "从不同生活节奏出发，安排服务资源。",
-      audienceNote: "分组顺序为行动不便、其余老年居民、其余通勤上班族、其余常住居民；用于服务安排，不作为享受服务的资格条件。",
-      strategyTitle: "便民服务资源安排", compareTitle: "服务增量，也要关照可达性。",
+      id: "public", title: "公共服务", english: "Public services", icon: "landmark", order: 3,
+      subtitle: "比较服务时段与网点安排对办理量、可达性和增量成本的影响。",
+      decision: "增设晚间或周末窗口，还是开设社区流动服务点？",
+      worldTitle: "社区服务网络", worldSubtitle: "沿着查询、到场与办理流程，比较不同服务资源配置。",
+      audienceTitle: "区分居民需求与服务可达性。",
+      audienceNote: "居民按行动不便、其他老年居民、通勤上班族、其他常住居民依次归组，彼此互斥。分组仅用于测算服务可达性，不改变服务资格。",
+      strategyTitle: "服务资源配置", compareTitle: "比较办理量、重点人群覆盖与预算使用。",
       schemes: [
-        { id: "baseline", name: "现有服务窗口", short: "现有窗口", desc: "沿用常规营业时间与现有办理能力。", tag: "对照" },
-        { id: "open", name: "延时便民窗口", short: "延时窗口", desc: "增加晚间或周末办理时段，方便时间受限的居民。", tag: "方案 A" },
-        { id: "member", name: "社区流动服务", short: "流动服务", desc: "将办理点前移至社区，降低出行门槛。", tag: "方案 B" }
+        { id: "baseline", name: "现行服务窗口", short: "现行窗口", desc: "维持现有服务时段与办理能力，作为比较基线。", tag: "对照" },
+        { id: "open", name: "晚间 / 周末延时窗口", short: "延时窗口", desc: "增加非工作时段的办理名额，服务时间受限的居民。", tag: "方案 A" },
+        { id: "member", name: "社区流动服务点", short: "流动服务点", desc: "将服务带到社区，减少居民前往固定网点的出行负担。", tag: "方案 B" }
       ],
       controls: [
-        control("capacityA", "延时新增办理能力", "range", 0, 300, 10, "人次 / 天", "open", "每个新增办理名额按 40 元增量运营成本估算。"),
-        control("mobileCapacityB", "流动点新增能力", "range", 0, 300, 10, "人次 / 天", "member", "流动点开设成本 3,000 元，每个名额另计 55 元。"),
-        control("baseCapacity", "现有每日办理能力", "number", 10, 3000, 10, "人次 / 天", "shared", "三组共享同一现状基线；现有运营成本不计入增量预算。"),
-        control("demand", "每日新增服务需求", "number", 20, 10000, 10, "人次 / 天", "shared", "窗口内每个需求按一次办理计数。"),
-        control("days", "规划周期", "select", 7, 30, 1, "天", "shared", "需求量与服务能力在周期内按日累计。", periodOptions),
-        control("budget", "单方案增量预算", "number", 0, 1000000, 500, "元", "shared", "预算不足时缩减新增能力；不影响现有窗口的基线能力。")
+        control("capacityA", "延时窗口每日新增名额", "range", 0, 300, 10, "人次 / 天", "open", "按计划新增名额计费；每名额每规划日估算 40 元增量运营成本。"),
+        control("mobileCapacityB", "流动点每日新增名额", "range", 0, 300, 10, "人次 / 天", "member", "开点固定成本 3,000 元；每名额每规划日另估算 55 元。"),
+        control("baseCapacity", "现有窗口日办理能力", "number", 10, 3000, 10, "人次 / 天", "shared", "各方案共用现状基线；既有运营费用不计入增量预算。"),
+        control("demand", "日均办理需求", "number", 20, 10000, 10, "人次 / 天", "shared", "每项服务需求按一次办理计数；周期内按日累计。"),
+        control("days", "规划周期", "select", 7, 30, 1, "天", "shared", "需求量与新增服务能力按规划天数累计。", periodOptions),
+        control("budget", "单方案增量预算", "number", 0, 1000000, 500, "元", "shared", "预算不足时按比例缩减新增名额；现有窗口能力保持不变。")
       ],
       segments4: [
-        segment("resident", "常住居民", "时间安排相对灵活", "不属于其他三类，通常可以在常规时段到场。", 0.90, 0, "在附近、流程清楚，就比较方便。"),
-        segment("commuter", "通勤上班族", "工作时间与窗口重叠", "常规工作时段不便办理，受益于晚间与周末服务。", 0.48, 1, "如果下班后也能办，就不用专门请假。"),
-        segment("senior", "老年居民", "需要更近、更清晰的服务", "不属于行动不便组，更重视位置、引导与办理便利。", 0.66, 2, "服务点近一些，有人讲清楚会更好。"),
-        segment("mobility", "行动不便居民", "出行便利是关键", "到达常规窗口的门槛较高，关注社区就近办理。", 0.28, 3, "希望在社区里就能把事情办好。")
+        segment("resident", "其他常住居民", "常规时段可到场", "不属于其他三类的常住居民；情景中多数可在常规时段到场。", 0.90, 0, "离家近、流程清楚，办理会方便很多。"),
+        segment("commuter", "通勤上班族", "工作时间与窗口重叠", "工作时段通常与窗口开放时间重叠；晚间或周末服务可能更便利。", 0.48, 1, "下班后也能办理，就不必专门请假。"),
+        segment("senior", "其他老年居民", "关注位置与办理指引", "不属于行动不便组；服务位置、现场指引与流程清晰度会影响到场。", 0.66, 2, "路线方便一点，现场有人说明就更安心。"),
+        segment("mobility", "行动不便居民", "就近服务更易到达", "前往固定窗口的出行负担较高；社区内服务可能降低到场门槛。", 0.28, 3, "如果服务点在社区附近，我会更方便前往。")
       ],
-      objectives: [{ value: "served", label: "提高办理完成总量" }, { value: "access", label: "提高重点人群服务覆盖" }],
-      metrics: [metric("served", "完成办理", "人次", "integer"), metric("completion", "需求完成率", "%", "percent"), metric("access", "重点人群覆盖", "%", "percent", "max", "老年与行动不便两类需求中已完成办理的比例。"), metric("cost", "增量运营费用", "元", "currency", "min")],
-      tableMetrics: [metric("served", "完成办理", "人次", "integer"), metric("completion", "完成率", "%", "percent"), metric("access", "重点人群覆盖", "%", "percent"), metric("unmet", "剩余需求", "人次", "integer", "min"), metric("cost", "增量费用", "元", "currency", "min")],
+      objectives: [{ value: "served", label: "增加办理完成量" }, { value: "access", label: "提高重点居民覆盖率" }],
+      metrics: [metric("served", "完成办理人次", "人次", "integer", "max", "规划周期内完成的办理总人次。"), metric("completion", "需求完成率", "%", "percent", "max", "已完成办理人次 ÷ 估算服务需求人次。"), metric("access", "重点居民覆盖率", "%", "percent", "max", "老年居民与行动不便居民的完成办理人次 ÷ 两类居民的估算需求人次。"), metric("cost", "增量运营费用", "元", "currency", "min", "方案新增能力的估算运营费用；不含现有窗口成本。")],
+      tableMetrics: [metric("served", "完成办理人次", "人次", "integer"), metric("completion", "需求完成率", "%", "percent"), metric("access", "重点居民覆盖率", "%", "percent"), metric("unmet", "未完成需求", "人次", "integer", "min", "估算需求总量减去已完成办理量。"), metric("cost", "增量运营费用", "元", "currency", "min")],
       defaultState: { scheme: "member", objective: "served", weights: [30, 35, 25, 10], params: { capacityA: 80, mobileCapacityB: 90, baseCapacity: 160, demand: 260, days: 14, budget: 80000 } },
       assumptions: [
-        "现状下四类居民能够到场的需求比例分别为 90%、48%、66%、28%；实际办理受窗口总能力限制。",
-        "在未完成需求中，延时窗口的可使用比例分别为 25%、75%、15%、10%；社区流动服务分别为 30%、25%、70%、90%。这些比例是待校准的情景假设。",
-        "新增名额在能够使用该服务的剩余需求之间按比例分配，不改变现有窗口已完成的办理，不设置差别资格或剥夺既有服务。",
-        "延时窗口每个计划名额成本 40 元；流动服务先支出 3,000 元开设成本，再按每个计划名额 55 元估算。按已安排的能力计费，不以实际到场人数冲减排班费用。",
-        "重点人群覆盖率 = 老年与行动不便居民完成量 ÷ 两类需求量。积压消化天数 = 剩余需求 ÷ 当前日服务上限，仅衡量压力，未计后续新需求，不是现场等候时间。"
+        "四类居民在现状下的估算到场比例依次为 90%、48%、66%、28%；可完成量同时受窗口办理能力限制。",
+        "对尚未完成的需求，延时窗口的可使用比例依次为 25%、75%、15%、10%；社区流动服务依次为 30%、25%、70%、90%。均为待校准的情景假设。",
+        "新增名额在可能使用该服务的未完成需求中按比例分配；不减少现有窗口已完成量，也不改变服务资格。",
+        "延时窗口按每个计划新增名额每规划日 40 元估算；流动服务另计 3,000 元开点成本，并按每个计划新增名额每规划日 55 元估算。费用按排定能力计，不因实际到场人数减少。",
+        "重点居民覆盖率 = 老年居民与行动不便居民的完成办理量 ÷ 两类居民估算需求量。积压消化天数 = 未完成需求 ÷ 当前日办理上限；该指标不等同于现场等候时间，且未计后续新增需求。"
       ],
-      validation: ["先对现有到场时段、未办成原因与各窗口能力进行匿名汇总。", "选择相近服务点或分阶段试行，保持既有服务可用。", "同时比较办理总量、重点人群覆盖、实际工时与单位增量成本。"]
+      validation: ["先匿名汇总到场时段、未办成原因、各窗口能力与居民出行需求。", "选择需求相近的服务点开展分阶段试行，并保持现有服务持续可用。", "同步比较完成办理量、重点居民覆盖率、实际工时与单位增量成本。"]
     }
   ];
 
@@ -263,7 +263,7 @@
       var focusDemand = populations[2] + populations[3], focusServed = groups[2].served + groups[3].served;
       return Object.assign(rowMeta(config, scheme), { served: served, completion: percent(served, reach), rate: percent(served, reach), access: percent(focusServed, focusDemand), unmet: unmet, cost: cost, pressure: unmet / ((baseCapacity + addedCapacity) / p.days), coverage: planned ? addedCapacity / planned : 1, capacity: baseCapacity + addedCapacity, addedCapacity: addedCapacity, unusedCapacity: Math.max(0, addedCapacity - sum(available) * allocation), groups: groups });
     });
-    return { reach: reach, rows: rows, chartKey: state.objective, chartLabel: state.objective === "access" ? "重点人群服务覆盖" : "完成办理人次", chartUnit: state.objective === "access" ? "%" : "人次" };
+    return { reach: reach, rows: rows, chartKey: state.objective, chartLabel: state.objective === "access" ? "重点居民覆盖率" : "完成办理人次", chartUnit: state.objective === "access" ? "%" : "人次" };
   }
 
   function compute(moduleId, input) {
@@ -278,10 +278,10 @@
     var notes = [];
     if (selected.coverage < 0.999999) notes.push(config.id === "growth" ? "当前方案受预算或服务能力限制，实际覆盖已相应缩减。" : "当前预算无法覆盖全部计划，测算已按可承担规模调整。");
     if (config.id === "merchant" && state.params.cost > state.params.price) notes.push("单件变动成本高于售价，原价销售也会产生负贡献毛利。请核对售价与成本。");
-    if (config.id === "merchant" && ((selected.id === "open" && state.params.couponA > state.params.price) || (selected.id === "member" && state.params.couponB > state.params.price))) notes.push("礼遇金额已按商品售价封顶，实付价格最低为 0 元。");
+    if (config.id === "merchant" && ((selected.id === "open" && state.params.couponA > state.params.price) || (selected.id === "member" && state.params.couponB > state.params.price))) notes.push("优惠金额已按商品售价封顶，实付价格最低为 0 元。");
     if (config.id === "growth") notes.push("7 日留存按用户激活后单独计时，完整观察期为进入窗口结束后再加 7 天。");
     if (config.id === "public" && selected.unusedCapacity > 0.01) notes.push("部分新增名额没有对应的可到场需求；已安排的名额仍计入运营费用。");
-    if (config.id === "public" && state.weights[2] + state.weights[3] === 0) notes.push("当前未配置老年或行动不便客群，重点人群覆盖率按 0 显示，不代表服务质量。");
+    if (config.id === "public" && state.weights[2] + state.weights[3] === 0) notes.push("当前未配置老年居民或行动不便居民，重点居民覆盖率按 0 显示，不代表整体服务质量。");
     notes.push("情景测算基于当前参数与预设响应规则；可用于比较方案，实际实施前应以业务数据校准并验证。");
     var recommendation = best.id === "baseline" ? "当前假设下，保留现有方案更符合「" + objectiveLabel.replace(/^提高/, "") + "」目标。可继续调整资源与客群结构。" : "优先验证「" + best.name + "」。在当前假设下，它更符合「" + objectiveLabel.replace(/^提高/, "") + "」目标。";
     return Object.assign(result, { moduleId: config.id, state: state, selected: selected, best: best, metrics: config.metrics, tableMetrics: config.tableMetrics, recommendation: recommendation, notes: notes, assumptions: config.assumptions, validation: config.validation });
