@@ -1,8 +1,8 @@
-# 演策 YANCE · 决策预演工作台
+# 智演 ZHIYAN · 决策预演工作台
 
 [打开网站](https://kzczc.github.io/yance-decision-studio/)
 
-演策将经营方案放进可观察的情景里：比较策略、理解人群反应，并形成下一步验证计划。
+智演将经营方案放进可观察的情景里：比较策略、理解人群反应，并形成下一步验证计划。
 
 ## 三条产品线
 
@@ -43,6 +43,10 @@
 python -m http.server 8000 --directory docs
 ```
 
+## 品牌与录制
+
+产品名称为 **智演 ZHIYAN**。主工作台使用城市地图作为低对比度环境线索，品牌页展示正式字标、场景路径图形、色彩和字体系统。录制流程见 [`DEMO-RECORDING.md`](DEMO-RECORDING.md)，默认演示 BizLab 的“滨水周末集市 / 新品促销”情境。
+
 ## 部署
 
 使用 GitHub Pages，发布 `main` 分支的 `/docs` 目录。无需构建或安装依赖。
@@ -62,7 +66,7 @@ python -m http.server 8000 --directory docs
 - Kenney Tiny Town：CC0，见 `docs/assets/pixel-town-license.txt`。
 - 人物绘制、地图编排、交互与品牌符号在本项目中制作。
 
-演策 / YANCE 的名称与品牌符号尚未进行商标可用性核验。
+智演 / ZHIYAN 的名称与品牌符号尚未进行商标可用性核验。网站仓库地址与浏览器存储键暂沿用旧名称，以保持链接和现有研究记录可用。
 
 
 ## 排版与导航更新

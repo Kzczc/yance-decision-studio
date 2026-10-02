@@ -1,5 +1,5 @@
 /*
- * Yance pixel village — frontend scenario choreography, not an AI engine.
+ * ZHIYAN pixel village — frontend scenario choreography, not an AI engine.
  * Terrain / building tiles: Kenney Tiny Town, CC0; see pixel-town-license.txt.
  * Palette adaptation, people, water, street furniture, animation and layout
  * are created for this product. Displayed counts refer to the current visual sample.
@@ -25,9 +25,9 @@
     public:['首次办理居民','流程关注居民','常办居民','低频居民']
   };
   const THEMES = {
-    growth: { names:['用户研究站','创意工坊','产品体验中心','交流咖啡馆','灵感书屋','数据观察站'], primary:'体验中心', activity:'体验新功能', entered:'进入体验', done:'完成体验', browsing:'了解产品', offer:'体验邀请', speech:['这个功能不错','一起试试看','操作更顺手了','我想了解更多'], center:'PRODUCT LAB', market:'IDEA FAIR' },
-    merchant: { names:['街角咖啡馆','生活杂货铺','新品概念门店','手作面包房','独立书店','会员服务站'], primary:'概念门店', activity:'浏览新品', entered:'进店体验', done:'完成购买', browsing:'浏览新品', offer:'活动优惠', speech:['这里有新品','去店里看看','带一份回家','价格挺合适'], center:'CONCEPT STORE', market:'WEEKEND MARKET' },
-    public: { names:['便民咨询站','社区议事厅','社区服务中心','邻里活动室','共享阅读室','志愿者驿站'], primary:'服务中心', activity:'了解服务', entered:'进入服务点', done:'完成办理', browsing:'阅读服务指引', offer:'服务通知', speech:['这里可以咨询','指引很清楚','一起去服务站','办理好了'], center:'COMMUNITY HUB', market:'COMMUNITY FAIR' }
+    growth: { names:['用户研究站','创意工坊','产品体验中心','交流咖啡馆','灵感书屋','数据观察站'], primary:'体验中心', activity:'体验新功能', entered:'进入体验', done:'完成体验', browsing:'了解产品', offer:'体验邀请', speech:['这个功能不错','一起试试看','操作更顺手了','我想了解更多'], center:'产品体验中心', market:'创意展场' },
+    merchant: { names:['街角咖啡馆','生活杂货铺','新品概念门店','手作面包房','独立书店','会员服务站'], primary:'概念门店', activity:'浏览新品', entered:'进店体验', done:'完成购买', browsing:'浏览新品', offer:'活动优惠', speech:['这里有新品','去店里看看','带一份回家','价格挺合适'], center:'新品概念门店', market:'周末集市' },
+    public: { names:['便民咨询站','社区议事厅','社区服务中心','邻里活动室','共享阅读室','志愿者驿站'], primary:'服务中心', activity:'了解服务', entered:'进入服务点', done:'完成办理', browsing:'阅读服务指引', offer:'服务通知', speech:['这里可以咨询','指引很清楚','一起去服务站','办理好了'], center:'市民服务中心', market:'社区活动场' }
   };
 
   const XS = [32,216,384,440,672,792], YS = [32,192,228,272,420];
@@ -97,7 +97,7 @@
   const buildingName=(mapId,module,index)=>MAP_BUILDING_NAMES[mapId]?.[index]||THEMES[module].names[index];
 
   class TownScene {
-    constructor({canvas,onSelect,onTick,onCamera,environment='clear'}={}){
+    constructor({canvas,onSelect,onTick,onCamera,onPan,environment='clear'}={}){
       if(!canvas?.getContext)throw new TypeError('TownScene requires a canvas.');
       this.canvas=canvas;this.viewCtx=canvas.getContext('2d');
       this.surface=document.createElement('canvas');this.surface.width=W;this.surface.height=H;
@@ -106,11 +106,12 @@
       this.onSelect=typeof onSelect==='function'?onSelect:()=>{};
       this.onTick=typeof onTick==='function'?onTick:()=>{};
       this.onCamera=typeof onCamera==='function'?onCamera:()=>{};
+      this.onPan=typeof onPan==='function'?onPan:()=>{};
       this.options={module:'merchant',mapId:'merchant-riverside',segments:DEFAULT_SEGMENTS.map(s=>({...s})),scheme:'open',coupon:8,memberTarget:'all',coverage:1,memberShare:.4,weights:[35,25,25,15],duration:14,conversion:.18,count:32,groupRates:null,lighting:'auto',environment:'clear',context:'',layout:'street',facilities:'standard',flow:'steady',resourceActive:true,guideSteps:2,supportAgents:4};
       if(['clear','rain','autumn'].includes(environment))this.options.environment=environment;
       this._mapLabels=[];this._labels=[];
       this._progress=0;this._playing=!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-      this._last=0;this._notifyAt=0;this._dirty=true;this._destroyed=false;this.speed=1;this.selected=null;this.positions=[];
+      this._last=0;this._notifyAt=0;this._dirty=true;this._destroyed=false;this.speed=1;this.selected=null;this.following=false;this.positions=[];
       this._visible=true;this._zoom=1;this.panX=0;this.panY=0;this.raf=0;this._resizeRaf=0;this._drag=null;this._suppressClickUntil=0;
       this._metrics={agentBuilds:0,mapBuilds:0,resizes:0,frames:0,draws:0,notifications:0};
       this._originalTouchAction=canvas.style.touchAction;
@@ -222,6 +223,12 @@
     destroy(){this._destroyed=true;this._cancelFrame();cancelAnimationFrame(this._resizeRaf);this._pointerUp();this.observer?.disconnect();window.removeEventListener('resize',this._resize);document.removeEventListener('visibilitychange',this._onVisibility);this.canvas.removeEventListener('click',this._onClick);this.canvas.removeEventListener('pointermove',this._onMove);this.canvas.removeEventListener('pointerdown',this._onDown);this.canvas.removeEventListener('pointerup',this._onUp);this.canvas.removeEventListener('pointercancel',this._onUp);this.canvas.removeEventListener('lostpointercapture',this._onUp);this.canvas.style.touchAction=this._originalTouchAction;}
     selectAgent(id){const a=this.agents.find(a=>String(a.id)===String(id));if(a){this.selected=a.id;this._dirty=true;if(this._canRender())this.onSelect(this._profile(a));this._schedule();}}
     focusAgent(id){const a=this.agents.find(a=>String(a.id)===String(id));if(!a)return;this.selectAgent(id);const p=this._agentPosition(a);this.setCamera({zoom:Math.max(1.55,this.zoom),panX:W/2-p.x,panY:H/2-p.y});}
+    setFollowing(value){this.following=!!value&&this.selected!=null;if(this.following)this._trackSelected();}
+    _trackSelected(){
+      const a=this.agents.find(agent=>agent.id===this.selected);if(!a)return;
+      const p=this._agentPosition(a),before=this.getCamera();this._zoom=Math.max(1.55,this._zoom);this.panX=W/2-p.x;this.panY=H/2-p.y;this._applyCamera();
+      if(before.zoom!==this._zoom||before.panX!==this.panX||before.panY!==this.panY){this._dirty=true;this._schedule();}
+    }
     _configureMap(){
       const map=MAPS.get(this.options.mapId,this.options.module),xs=map.xs||XS,ys=map.ys||YS;
       for(let j=0;j<ys.length;j++)for(let i=0;i<xs.length;i++){const n=j*xs.length+i;nodes[n].x=xs[i];nodes[n].y=ys[j];}
@@ -247,7 +254,7 @@
     _selectAt(e){const best=this._hitAt(this._eventPoint(e));if(best)this.selectAgent(best.id);}
     _pointerDown(e){if(this._zoom<=1||e.isPrimary===false||(e.button!=null&&e.button!==0))return;this._drag={id:e.pointerId,x:e.clientX,y:e.clientY,panX:this.panX,panY:this.panY,moved:false};try{this.canvas.setPointerCapture(e.pointerId);}catch{}this.canvas.style.cursor='grabbing';}
     _pointerMove(e){
-      if(this._drag&&e.pointerId===this._drag.id){const dx=e.clientX-this._drag.x,dy=e.clientY-this._drag.y;if(Math.hypot(dx,dy)>4)this._drag.moved=true;if(this._drag.moved){const r=this.canvas.getBoundingClientRect();this.setCamera({panX:this._drag.panX+dx*(this.width/(r.width||1))/this.scale,panY:this._drag.panY+dy*(this.height/(r.height||1))/this.scale});this.canvas.style.cursor='grabbing';}return;}
+      if(this._drag&&e.pointerId===this._drag.id){const dx=e.clientX-this._drag.x,dy=e.clientY-this._drag.y;if(Math.hypot(dx,dy)>4)this._drag.moved=true;if(this._drag.moved){if(this.following){this.following=false;this.onPan()}const r=this.canvas.getBoundingClientRect();this.setCamera({panX:this._drag.panX+dx*(this.width/(r.width||1))/this.scale,panY:this._drag.panY+dy*(this.height/(r.height||1))/this.scale});this.canvas.style.cursor='grabbing';}return;}
       this.canvas.style.cursor=this._hitAt(this._eventPoint(e))?'pointer':this._zoom>1?'grab':'default';
     }
     _pointerUp(e){if(!this._drag||(e&&e.pointerId!==this._drag.id))return;const drag=this._drag;this._drag=null;if(drag.moved)this._suppressClickUntil=performance.now()+400;try{if(this.canvas.hasPointerCapture?.(drag.id))this.canvas.releasePointerCapture(drag.id);}catch{}this.canvas.style.cursor=this._zoom>1?'grab':'default';}
@@ -323,7 +330,7 @@
     _cancelFrame(){cancelAnimationFrame(this.raf);this.raf=0;}
     _frame(time){
       this.raf=0;if(!this._canRender()){this._last=0;return;}this._metrics.frames++;const dt=this._last?Math.min((time-this._last)/1000,.06):0;this._last=time;
-      let ended=false;if(this._playing){this._progress=clamp(this._progress+dt*this.speed/(this.options.duration*5),0,1);if(this._progress>=1){this._playing=false;ended=true;}this._dirty=true;}
+      let ended=false;if(this._playing){this._progress=clamp(this._progress+dt*this.speed/(this.options.duration*5),0,1);if(this._progress>=1){this._playing=false;ended=true;}this._dirty=true;}if(this.following)this._trackSelected();
       if(this._dirty){this.draw();this._dirty=false;}if(ended||(this._playing&&time-this._notifyAt>200)){this._notifyAt=time;this._notify();}if(!this._playing)this._last=0;this._schedule();
     }
     rect(x,y,w,h,color){this.ctx.fillStyle=color;this.ctx.fillRect(Math.round(x),Math.round(y),Math.round(w),Math.round(h));}
@@ -735,7 +742,7 @@
       this._renderLabels();
       this._debug();
     }
-    _debug(){window.sceneDebug={...this._counts,style:'top-down-pixel-village',module:this.options.module,progress:this._progress,playing:this._playing,visible:this._visible,camera:this.getCamera(),metrics:this._metrics,options:{...this.options},positions:this.positions.map(p=>({...p})),textLabels:(this._renderedLabels||[]).map(label=>({...label}))};}
+    _debug(){window.sceneDebug={...this._counts,style:'top-down-pixel-village',module:this.options.module,progress:this._progress,playing:this._playing,visible:this._visible,following:this.following,camera:this.getCamera(),metrics:this._metrics,options:{...this.options},positions:this.positions.map(p=>({...p})),textLabels:(this._renderedLabels||[]).map(label=>({...label}))};}
     _environment(){
       const tick=this._progress*this.options.duration*5;
       // Flowing water, a rippling fountain, smoke and a fluttering shop flag.
