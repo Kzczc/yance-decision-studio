@@ -1,9 +1,9 @@
 /* ZHIYAN: one visual language from the city scene through analysis and reports. */
-:root{--paper:#f4f6f1;--ink:#273d3d;--muted:#59716e;--line:#d4dfd9;--accent:#24544e;--accent-dark:#173d39;--tint:#e7f0e9;--brick:#b66b50;--lab-accent:#a36349;--text-strong:#273d3d;--text-reading:#405b58;--text-secondary:#58716d;--border-quiet:#d4dfd9;--border-control:#adc5ba}
+:root{--paper:#f4f6f1;--ink:#273d3d;--muted:#59716e;--line:#d4dfd9;--accent:#24544e;--accent-dark:#173d39;--tint:#e7f0e9;--brick:#a8634b;--lab-accent:#a36349;--text-strong:#273d3d;--text-reading:#405b58;--text-secondary:#58716d;--border-quiet:#d4dfd9;--border-control:#adc5ba;--body:'Noto Sans SC','Inter','Microsoft YaHei',sans-serif;--display:'Noto Serif SC','Noto Sans SC','Microsoft YaHei',serif}
 html[data-product=public]{--lab-accent:#577b59;--lab-pale:#e8f0e4}
 html[data-product=growth]{--lab-accent:#427d82;--lab-pale:#e5f0ef}
 html[data-product=merchant]{--lab-accent:#a7644a;--lab-pale:#f6ece5}
-body{background:#f4f6f1;color:#273d3d}
+body{background:#f4f6f1;color:#273d3d;font-family:var(--body)}h1,h2,h3,h4{font-family:var(--display)}
 .sky-atmosphere{height:370px;opacity:1;background:#eaf1eb url('assets/environment-sky.svg') center top/100% 370px no-repeat}
 .sky-atmosphere::before{inset:76px 0 auto;height:215px;background:url('assets/environment-rooftops.svg') center bottom/1400px 230px repeat-x;opacity:.28;mask-image:none}
 body::after{height:135px;background-size:100% 135px;opacity:.14}
@@ -12,7 +12,7 @@ body::after{height:135px;background-size:100% 135px;opacity:.14}
 .site-nav .current,.site-nav a:hover,.site-nav button:hover{color:#244e49}.site-nav .current::after{background:#a7644a}
 .intro{position:relative;isolation:isolate;overflow:hidden;min-height:111px;padding:21px 24px;margin:16px 0 0;border-top:1px solid #c9d9d0;border-bottom:1px solid #c9d9d0;background:#e8efe9}
 .intro::before{content:'';position:absolute;inset:0;z-index:-1;background:url('assets/brand-city.png') center 50%/cover no-repeat;opacity:.13;pointer-events:none}
-.intro h1{color:#234b46;font-size:calc(29px * var(--text-scale,1));margin-bottom:2px;letter-spacing:0}.intro p{color:#48635f;font-size:calc(13px * var(--text-scale,1));line-height:1.55}
+.intro h1{color:#234b46;font-size:calc(28px * var(--text-scale,1));margin-bottom:2px;letter-spacing:0}.intro p{color:#48635f;font-size:calc(13px * var(--text-scale,1));line-height:1.55}
 .intro-status{display:flex;align-items:center;justify-content:flex-end;gap:0;flex-wrap:wrap;min-width:0;color:#365e59;font-size:calc(12px * var(--text-scale,1));font-variant-numeric:tabular-nums}.intro-status span{padding:3px 12px;border-left:1px solid #9eb8aa;white-space:nowrap}.intro-status span:first-child{border-left:0}
 .module-navigation{border-color:#b6cdc1}.module-tabs button{min-height:72px;padding:10px 19px 12px}.module-tabs button[aria-selected=true]{border-bottom-color:var(--lab-accent);background:#fffefaaf}.module-tabs button:hover{background:#fffefa80}.module-tabs b{color:#355f5c}.module-tabs b em,.module-tabs small{color:#567973}.module-tabs button[aria-selected=true] .module-symbol{color:var(--lab-accent)}
 .workspace-heading{padding:17px 0 15px}.workspace-heading h2{font-size:calc(22px * var(--text-scale,1));color:#2a4b48}.workspace-heading p{font-size:calc(13px * var(--text-scale,1));color:#58736e}.study-actions .button:not(.primary){border-color:#b9cec1;color:#315b54}
