@@ -43,3 +43,14 @@
 - PolicyLab：选择「交通枢纽片区」，展示换乘通道、便民窗口和不同居民的服务路径。
 - GrowthLab：选择「产品体验展场」，展示展厅环线、演示舞台和咨询台。
 - 品牌页：展示智演字标、场景路径图形、城市地图和三条产品线。
+
+## 自动录制
+
+项目外的录制脚本位于 `work/record-demo.cjs`。先启动静态服务，再运行：
+
+```powershell
+node work/serve.cjs
+node work/record-demo.cjs
+```
+
+脚本使用 Playwright 视频录制，生成 `work/recordings/zhiyan-demo-3min.webm` 和同名章节 JSON。录制结果包含 13 个章节，实际录制时长约 1 分 47 秒；可以在剪辑阶段为旁白、片头和转场留出空间。录制脚本只控制浏览器，不改变产品代码。

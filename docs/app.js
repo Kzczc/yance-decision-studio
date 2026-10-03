@@ -3,6 +3,8 @@
 const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>Array.from(r.querySelectorAll(s)), S=window.YanceScenarios, M=window.YanceMaps;
 const STORE="yance-workspace-v4", SEGMENT_FLOOR=2;
 const safeText=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const semanticIcon=key=>({result:'chart-no-axes-combined',people:'users-round',cost:'wallet-cards',resource:'gauge',reason:'lightbulb',validation:'flask-conical',map:'map-pinned',activity:'route',policy:'landmark',growth:'beaker',merchant:'store'}[key]||'sparkles');
+const metricIcon=key=>({margin:'coins',orders:'shopping-bag',subsidy:'ticket-percent',retained:'repeat-2',activated:'zap',cost:'wallet-cards',served:'clipboard-check',access:'accessibility',unmet:'triangle-alert'}[key]||'chart-no-axes-combined');
 const copy=v=>JSON.parse(JSON.stringify(v));
 let ws={active:"merchant",states:{},names:{},studies:[]},scene=null,configuring=false,currentView="world",speed=1,toastId,lastProfile=null;
 const UI_STORE="yance-interface-v1",motionQuery=matchMedia("(prefers-reduced-motion: reduce)");
@@ -202,7 +204,7 @@ function strategyFeedback(){
  const [title,desc]=guidance[c.id][scheme]||guidance[c.id].baseline;$("#focus-title").textContent=title;$("#focus-copy").textContent=desc;
  const keys=c.id==="merchant"?[r.chartKey,r.chartKey==="margin"?"orders":"margin","subsidy"]:c.id==="growth"?[r.chartKey,r.chartKey==="retained"?"activated":"retained","cost"]:[r.chartKey,r.chartKey==="served"?"access":"served","cost"];
  const all=c.metrics.concat(c.tableMetrics),metrics=keys.map(key=>all.find(m=>m.key===key)).filter(Boolean);
- $("#effect-metrics").innerHTML=metrics.map(m=>'<div class="effect-metric"><small>'+safeText(m.label)+'</small><strong>'+fmt(r.selected[m.key],m)+'</strong><em>'+safeText(deltaText(r.selected,base,m))+'</em></div>').join("");
+ $("#effect-metrics").innerHTML=metrics.map(m=>'<div class="effect-metric"><small><i data-lucide="'+metricIcon(m.key)+'"></i>'+safeText(m.label)+'</small><strong>'+fmt(r.selected[m.key],m)+'</strong><em>'+safeText(deltaText(r.selected,base,m))+'</em></div>').join("");icons();
  const nextFeedback=JSON.stringify([c.id,s.scheme,metrics.map(m=>r.selected[m.key])]);if(feedbackKey&&feedbackKey!==nextFeedback&&!reduceMotion())$("#effect-metrics").animate([{opacity:.5},{opacity:1}],{duration:240,easing:"ease-out"});feedbackKey=nextFeedback;
  const coverage=scheme==="baseline"?"现状参照 · 未增加策略投入":r.selected.coverage<.999?"资源提醒：预算或服务能力可支持计划的 "+nr(r.selected.coverage*100,1)+"%，已按可承担范围测算。":"当前预算与能力可覆盖本方案计划。";
  $("#resource-feedback").textContent=coverage;$("#resource-feedback").classList.toggle("limited",scheme!=="baseline"&&r.selected.coverage<.999);
@@ -212,7 +214,7 @@ function strategyFeedback(){
 }
 function cards(){
  const r=result(),c=config(),primary=currentMeta(),secondary=c.metrics.filter(m=>m.key!==r.chartKey).slice(0,2);
- $("#selection-feedback").textContent="正在观察："+r.selected.name;$("#scenario-cards").innerHTML=r.rows.map(row=>'<button class="scenario-card '+(row.id===r.selected.id?"selected":"")+'" aria-pressed="'+(row.id===r.selected.id)+'" data-select-scenario="'+row.id+'"><div class="scenario-tag">'+safeText(row.tag)+(row.id===r.selected.id?'<span class="selection-label">当前选择</span>':"")+'</div><div class="scenario-top"><h4>'+safeText(row.name)+'</h4>'+(row.id===r.best.id?'<span class="recommend-label">此目标下较优</span>':"")+'</div><div class="scenario-number">'+fmt(row[r.chartKey],primary)+(primary.format==="integer"?'<small>'+safeText(primary.unit)+'</small>':"")+'</div><div class="scenario-label">'+safeText(r.chartLabel)+'</div><div class="scenario-delta">'+safeText(deltaText(row,r.rows[0],primary))+'</div><div class="scenario-bottom">'+secondary.map(m=>'<div><span>'+safeText(m.label)+'</span><b>'+fmt(row[m.key],m)+'</b></div>').join("")+'</div></button>').join("");
+ $("#selection-feedback").innerHTML='<i data-lucide="eye"></i>正在观察：'+safeText(r.selected.name);$("#scenario-cards").innerHTML=r.rows.map(row=>'<button class="scenario-card '+(row.id===r.selected.id?"selected":"")+'" aria-pressed="'+(row.id===r.selected.id)+'" data-select-scenario="'+row.id+'"><div class="scenario-tag"><i data-lucide="'+(row.id===r.best.id?'sparkles':'circle-dot')+'"></i>'+safeText(row.tag)+(row.id===r.selected.id?'<span class="selection-label">当前选择</span>':"")+'</div><div class="scenario-top"><h4>'+safeText(row.name)+'</h4>'+(row.id===r.best.id?'<span class="recommend-label"><i data-lucide="badge-check"></i>此目标下较优</span>':"")+'</div><div class="scenario-number">'+fmt(row[r.chartKey],primary)+(primary.format==="integer"?'<small>'+safeText(primary.unit)+'</small>':"")+'</div><div class="scenario-label"><i data-lucide="'+metricIcon(r.chartKey)+'"></i>'+safeText(r.chartLabel)+'</div><div class="scenario-delta">'+safeText(deltaText(row,r.rows[0],primary))+'</div><div class="scenario-bottom">'+secondary.map(m=>'<div><span><i data-lucide="'+metricIcon(m.key)+'"></i>'+safeText(m.label)+'</span><b>'+fmt(row[m.key],m)+'</b></div>').join("")+'</div></button>').join("");icons();
  strategyFeedback();
 }
 function tableMarkup(r){
@@ -226,16 +228,16 @@ function comparison(){
  $("#recommendation-detail").textContent="较现状"+(Math.abs(r.selected[r.chartKey]-r.rows[0][r.chartKey])<.00001?"无变化。":deltaText(r.selected,r.rows[0],m).replace(" / 较现状","")+"。")+"下方指标与资源说明均属于当前选择。";
  $("#recommendation-tag").textContent=state().params.days+" 天 · "+nr(r.reach)+(ws.active==="public"?" 人次需求":" 人触达");
  $("#ranking-note").textContent="按「"+c.objectives.find(o=>o.value===state().objective).label+"」比较，当前领先的是「"+r.best.name+"」。"+(r.best.id===r.selected.id?"它也是你当前选择的策略。":"你可以在上方策略区选择它，或保留自己的方案继续调整。")+"排序基于当前假设，实际效果需验证。";
- $("#stats").innerHTML=r.metrics.map(meta=>'<article class="stat"><small>'+safeText(meta.label)+'</small><strong>'+fmt(r.selected[meta.key],meta)+'</strong><em>'+safeText(deltaText(r.selected,r.rows[0],meta))+'</em></article>').join("");
+ $("#stats").innerHTML=r.metrics.map(meta=>'<article class="stat"><small><i data-lucide="'+metricIcon(meta.key)+'"></i>'+safeText(meta.label)+'</small><strong>'+fmt(r.selected[meta.key],meta)+'</strong><em>'+safeText(deltaText(r.selected,r.rows[0],meta))+'</em></article>').join("");
  $("#chart-title").textContent=r.chartLabel+"对照";$("#chart-unit").textContent="单位 / "+r.chartUnit;
  const low=Math.min(0,...r.rows.map(row=>row[r.chartKey])),high=Math.max(1,...r.rows.map(row=>row[r.chartKey])),range=high-low,zero=-low/range*100;
  $("#result-chart").innerHTML=r.rows.map(row=>{const value=row[r.chartKey],left=value<0?(value-low)/range*100:zero;return'<div class="chart-row '+(row.id===r.selected.id?"selected":"")+'"><span>'+safeText(row.short)+'</span><div class="chart-track" role="img" aria-label="'+safeText(row.name)+' '+fmt(value,m)+'"><div class="zero-line" style="left:'+zero+'%"></div><div class="chart-bar '+(value<0?"loss":"")+'" style="left:'+left+'%;width:'+Math.abs(value)/range*100+'%"></div></div><b>'+fmt(value,m)+'</b></div>'}).join("");
  const top=state().weights.indexOf(Math.max(...state().weights)),difference=r.selected[r.chartKey]-r.rows[0][r.chartKey];
  const n=[{title:"与现状的差异",text:c.objectives.find(o=>o.value===state().objective).label+"是当前评价目标。"+(difference>1e-8?"当前选择较现状增加 "+(m.format==="percent"?nr(difference,1)+" 个百分点":fmt(difference,m))+"。":"当前选择未高于现状，可结合资源投入继续比较。")},{title:"主要人群",text:c.segments4[top].name+"占比 "+nr(state().weights[top],1)+"%。建议重点验证这一人群的行为基线与响应。"}].concat(r.notes.map((note,i)=>({title:i===r.notes.length-1?"测算说明":r.selected.short+" · 资源边界",text:note})));
- $("#insights").innerHTML=n.map(x=>'<div class="insight"><h4>'+safeText(x.title)+'</h4><p>'+safeText(x.text)+'</p></div>').join("");
+ $("#insights").innerHTML=n.map(x=>{const key=x.title.includes('人群')?'people':x.title.includes('资源')?'resource':x.title.includes('测算')?'reason':'result';return'<div class="insight"><h4><i data-lucide="'+semanticIcon(key)+'"></i>'+safeText(x.title)+'</h4><p>'+safeText(x.text)+'</p></div>'}).join("");
  $("#comparison-population").textContent=nr(r.reach)+" "+(ws.active==="public"?"人次需求":"人触达")+" / "+state().params.days+" 天";
  const temp=document.createElement("table");temp.innerHTML=tableMarkup(r);$("#table-head").innerHTML=temp.tHead.innerHTML;$("#table-body").innerHTML=temp.tBodies[0].innerHTML;
- $("#validation-steps").innerHTML=c.validation.map(v=>'<li>'+safeText(v)+'</li>').join("");
+ $("#validation-steps").innerHTML=c.validation.map((v,i)=>'<li><span class="validation-step">'+String(i+1).padStart(2,'0')+'</span><i data-lucide="'+semanticIcon('validation')+'"></i><span>'+safeText(v)+'</span></li>').join("");icons();
 }
 function renderAll({sceneUpdate=true}={}){
  ws.states[ws.active]=S.normalise(ws.active,state());syncControls();renderMix();cards();if(currentView==="comparison")comparison();if(sceneUpdate)updateScene();persist();
