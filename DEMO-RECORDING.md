@@ -53,4 +53,6 @@ node work/serve.cjs
 node work/record-demo.cjs
 ```
 
-脚本使用 Playwright 视频录制，生成 `work/recordings/zhiyan-demo-3min.webm` 和同名章节 JSON。当前录制结果包含 13 个章节，实际录制时长约 2 分 38 秒；可以在剪辑阶段继续加入片头、旁白和转场，形成约 3 分钟的路演版本。录制脚本只控制浏览器，不改变产品代码。
+脚本使用 Playwright 视频录制，生成 `work/recordings/zhiyan-demo-3min.webm`、`zhiyan-demo-subtitles.vtt` 和同名章节 JSON。当前高清录制为 1920 × 1080，实际录制时长约 1 分 42 秒，删去了没有新信息的停留镜头；可以在剪辑阶段加入片头、旁白和转场，形成约 2 分钟的路演版本。录制脚本只控制浏览器，不改变产品代码。
+
+片头和片尾使用与智演品牌相同的城市路径视觉。Blender 场景脚本位于 `work/zhiyan_blender_title.py`，有 Blender 的环境可直接渲染 `zhiyan-title.png` 和 `zhiyan-end.png`；当前工作区未安装 Blender，成片使用同视觉体系的高清网页卡片作为兼容版本。
